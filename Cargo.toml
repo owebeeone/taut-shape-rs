@@ -1,0 +1,17 @@
+[workspace]
+resolver = "2"
+members = [
+    "crates/taut-shape",
+    "crates/taut-shape-tool",
+]
+
+[workspace.package]
+version = "0.0.0"
+edition = "2021"
+license = "MIT OR Apache-2.0"
+repository = "https://example.invalid/taut-shape-rs"
+rust-version = "1.75"
+
+[workspace.lints.rust]
+# The core crate must stay no_std-clean; unsafe is not needed anywhere yet.
+unsafe_code = "forbid"

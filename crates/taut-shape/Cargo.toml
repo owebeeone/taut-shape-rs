@@ -1,0 +1,23 @@
+[package]
+name = "taut-shape"
+description = "Reference Rust implementation of the Taut `log` delivery-shape mailbox engine."
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+rust-version.workspace = true
+
+[lints]
+workspace = true
+
+[features]
+# `std` is on by default; the `no_std` gate is `--no-default-features`.
+# The core engine (Phase 1) is `no_std` + `alloc` only. `async` (the shell,
+# Phase 3) implies `std` and pulls `futures-core`; it is not wired yet — the
+# feature is declared up front so the manifest is stable across phases.
+default = ["std"]
+std = []
+async = ["std", "dep:futures-core"]
+
+[dependencies]
+futures-core = { version = "0.3", optional = true, default-features = false }

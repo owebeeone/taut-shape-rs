@@ -1,0 +1,26 @@
+[package]
+name = "taut-shape-tool"
+description = "Conformance/interop CLI for taut-shape-rs (gen/check/node/client)."
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+rust-version.workspace = true
+publish = false
+
+[lints]
+workspace = true
+
+[[bin]]
+name = "taut-shape-tool"
+path = "src/main.rs"
+
+[dependencies]
+# The tool is little more than the engine + framing (InitialPlan §4). It uses
+# the core with its `std` shell; the framing/CBOR layer lands in Phase 4.
+taut-shape = { path = "../taut-shape", features = ["std"] }
+
+[dev-dependencies]
+# The integration test spawns the built bin and hand-builds/decodes frames
+# with the same `cbor`/`generated` surface the tool speaks.
+taut-shape = { path = "../taut-shape", features = ["std"] }

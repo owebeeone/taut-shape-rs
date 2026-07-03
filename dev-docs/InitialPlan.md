@@ -36,6 +36,83 @@ open question.
 
 ---
 
+## Deviations (as-built)
+
+Deviations from the plan-as-written, recorded here as they are taken.
+
+- **D-01 (Phase 0) — the vendored CBOR runtime lives in the *core* crate, not
+  the tool crate.** The plan's repo structure (§ "Repository structure",
+  S0.3, and the CBOR-codec/Generated-message-types checklist rows) nominated
+  `crates/taut-shape-tool/src/cbor.rs` and asked to keep the core codec-free.
+  But the tautc-generated message codec is vendored into the **core** crate as
+  `crates/taut-shape/src/generated.rs` (D17), and that generated code references
+  `crate::cbor::Cbor` for every `to_cbor`/`from_cbor`. The runtime it names must
+  therefore resolve **inside the core crate**, so `cbor.rs` is vendored to
+  `crates/taut-shape/src/cbor.rs` (re-exported as `taut_shape::cbor`) rather than
+  the tool crate. The plan itself already flagged this tension in the
+  "Generated message types" checklist row ("the generated codec surface pairs
+  with the vendored `cbor.rs`… Lives **in the core crate**, so it must stay
+  `no_std`+`alloc`-clean"); this note pins the resolution. The tool crate reuses
+  the same `taut_shape::cbor::Cbor` for its Phase-4 framing instead of holding a
+  second copy — one runtime, no drift.
+  - **no_std adaptation of the vendored `cbor.rs`.** Two minimal edits on top of
+    the verbatim taut source (`taut/src/taut/gen/runtime/cbor.rs`), documented in
+    the file header: (1) explicit `use alloc::{string::String, vec::Vec};` since
+    the source leaned on the std prelude; (2) the two `2f64.powi(k)` call sites
+    (f16 decode) replaced with a `core`-only exact power-of-two helper `pow2`,
+    because `f64::powi` is std/libm-only and unavailable under `#![no_std]`. The
+    original `//!` module doc was de-inner'd to `//` so the `alloc` imports can
+    precede it. Everything else is unchanged; keep it so on re-vendor.
+  - **`generated.rs` header + one non-body edit.** A provenance/"do not edit"
+    banner is prepended (schema path + regen command + tracked commits), the
+    generator's own `#![allow(dead_code)]` inner attribute is hoisted above the
+    banner (inner attributes must lead the file), and an `alloc` prelude glob
+    (`use alloc::{string::String, vec, vec::Vec};`) is added so the codec names
+    resolve under `no_std`. The generator's empty-message `from_cbor(c)` emits an
+    `unused_variables` warning; it is suppressed with `#[allow(unused_variables)]`
+    on the `pub mod generated;` declaration in `lib.rs` (not in the file body),
+    keeping the vendored output byte-identical to `tautc`.
+
+- **D-02 (Phase 1) — `#![rustfmt::skip]` guards the byte-identical
+  `generated.rs`.** Once `cargo fmt` was wired for the hand-written engine, it
+  reflowed the vendored `generated.rs` (expanding `match` arms, splitting
+  `#[default] Push,`, etc.), breaking the D17 "byte-identical to `tautc`"
+  invariant. The `rustfmt.toml` `ignore` key is nightly-only (it warns and
+  no-ops on stable), so the fix is a `#![cfg_attr(rustfmt, rustfmt::skip)]`
+  inner attribute added at the very top of `generated.rs` (right after the
+  hoisted `#![allow(dead_code)]`) — the one stable-toolchain way to exempt a
+  whole file from formatting. This is the second and last edit above the raw
+  generator body; the header NOTE records it, and the body below the header
+  stays byte-identical to the `tautc gen -l rust --api-only` output (verified by
+  a byte diff against a fresh regen). Re-vendoring must re-add both this line
+  and the `#![allow(dead_code)]` above it.
+
+- **D-03 (Phase 1) — the generated `Log*` types stay namespaced, not
+  re-exported flat.** The Phase-0 `lib.rs` had `pub use generated::*`. The
+  hand-written §A.1 core types (`Cursor`, `Record`, `State`, `Error`,
+  `ErrorCode`, `StopReason`, …) deliberately own those short, unprefixed names
+  (the §A rendering is the review target and the shape the other language repos
+  mirror), so a flat re-export of the `Log*`-prefixed generated structs would
+  shadow-collide conceptually and clutter the crate root. `generated` is now a
+  plain `pub mod` (still reachable as `taut_shape::generated::Log*` for the
+  Phase-4 framing layer), and the crate root re-exports only the hand-written
+  §A.1–A.4 surface. (The tool stub's `taut_shape::LogMsgType::default()` touch
+  became `taut_shape::LogNode::new(Config::default())` — a more honest link edge
+  now that the engine exists.)
+
+- **D-04 (Phase 1) — hand-written §A.1 types wrap, not alias, the generated
+  ones.** The engine's in-memory vocabulary uses the ergonomic §A.1 forms
+  (`Cursor { seq: u64 }`, `StreamId(Arc<str>)`, `TimerToken(u64)`, an
+  `Option`-per-axis `Limits`, `State`/`ErrorCode`/`StopReason` enums) rather than
+  the generated wire structs (which are `i64`-typed, carry `log_id` on the
+  addressed messages, and fold limits into flat `max_records`/`max_bytes`
+  fields). This matches §A.1–A.4 exactly and keeps the engine free of the
+  service-level `log_id` (that lives on `Addressed<T>` at the §A.8 service layer,
+  Phase 3+). Converting between the two is the tool crate's framing concern
+  (Phase 4), not the engine's — the engine never sees the wire structs.
+
+---
+
 ## 0. Specialization checklist (resolved for Rust)
 
 | Marker (shared §7) | Rust commitment |
