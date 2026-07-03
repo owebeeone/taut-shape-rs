@@ -4,11 +4,11 @@
 //! "response handler": its ≤1 held read (D5), the timer token that read is
 //! waiting on (D14), its delivery watermark (D7), and a creation rank used to
 //! order multi-wake emissions (D16). This module knows nothing of bytes or
-//! retention — those live in [`crate::window`].
+//! retention — those live in [`super::window`].
 
 use alloc::collections::BTreeMap;
 
-use crate::types::{Cursor, Limits, StreamId, TimerToken};
+use super::types::{Cursor, Limits, StreamId, TimerToken};
 
 /// A parked tail read (shared §3.4 rule 2, held branch). Its timeout has
 /// already been resolved into an optional timer token by the node.

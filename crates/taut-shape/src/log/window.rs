@@ -3,12 +3,12 @@
 //! Distilled from glade `store.rs`: the `scan(from)` resume discipline
 //! (no dup / no skip) with `heads` collapsed to a single origin. This module
 //! knows nothing of streams, held reads, timers, or watermarks — those live in
-//! [`crate::session`].
+//! [`super::session`].
 
 use alloc::collections::VecDeque;
 use alloc::vec::Vec;
 
-use crate::types::{Bytes, Error, Limits, Record};
+use super::types::{Bytes, Error, Limits, Record};
 
 /// The lifecycle of the backing log (D12). `Live` is the only non-terminal
 /// state; the three terminals describe the *log*, not any stream, and still

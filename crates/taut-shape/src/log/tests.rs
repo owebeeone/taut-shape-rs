@@ -7,7 +7,7 @@ use alloc::vec;
 use alloc::vec::Vec;
 
 use crate::generated::{LogDiagCode, LogDiagnostic, LogSeverity};
-use crate::{
+use super::{
     Config, Cursor, Error, ErrorCode, Input, Limits, LogNode, Output, Record, Response, State,
     StopReason, StopWhen, StreamId, TimerToken,
 };

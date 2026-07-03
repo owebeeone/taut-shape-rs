@@ -7,7 +7,7 @@
 use alloc::vec::Vec;
 
 use crate::generated::LogDiagnostic;
-use crate::types::{Bytes, Cursor, Error, Limits, Record, State, StopReason, StreamId, TimerToken};
+use super::types::{Bytes, Cursor, Error, Limits, Record, State, StopReason, StreamId, TimerToken};
 
 /// Everything that can happen to a log, as one enum. Producer-side inputs are
 /// node-local and unaddressed (the producer lives with the node in v0);

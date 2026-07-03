@@ -25,16 +25,28 @@ use taut_shape::{
 };
 
 use crate::framing::{self, Frame};
+use crate::jsoncodec;
+use crate::script::{Pending, Script};
+
+/// `node`-mode construction knobs collected from the CLI.
+pub struct Opts {
+    pub stop_when: StopWhen,
+    /// Optional `--script`: a producer-injection script fired against the local
+    /// engine after the k-th client frame is processed (interop driver, §7).
+    pub script: Option<Script>,
+}
 
 /// Run the node pump against real stdin/stdout. Returns the process exit code
 /// (0 on clean EOF, 3 on a malformed/unknown frame, 1 on an underlying I/O
 /// fault on the streams themselves).
-pub fn run(stop_when: StopWhen) -> u8 {
+pub fn run(opts: Opts) -> u8 {
     let stdin = io::stdin();
     let stdout = io::stdout();
+    let stderr = io::stderr();
     let mut input = stdin.lock();
     let mut output = BufWriter::new(stdout.lock());
-    match pump(&mut input, &mut output, stop_when) {
+    let mut transcript = stderr.lock();
+    match pump(&mut input, &mut output, &mut transcript, opts) {
         Ok(code) => code,
         Err(e) => {
             eprintln!("taut-shape-tool node: I/O error: {e}");
@@ -46,12 +58,20 @@ pub fn run(stop_when: StopWhen) -> u8 {
 /// The pump loop, generic over the byte streams so the integration test can
 /// drive it directly (and so it is `#[cfg(test)]`-exercisable without a process
 /// spawn, in addition to the real-pipe test).
-pub fn pump<R: Read, W: Write>(
+///
+/// `transcript` receives one OOB JSONL line per injected producer message and
+/// its outputs (the interop control channel, §7); it is `sink()`-able when a
+/// caller does not want a transcript. Only the `--script` path writes to it —
+/// ordinary client-driven frames are already visible as the data-channel frames.
+pub fn pump<R: Read, W: Write, T: Write>(
     input: &mut R,
     output: &mut W,
-    stop_when: StopWhen,
+    transcript: &mut T,
+    opts: Opts,
 ) -> io::Result<u8> {
-    let mut node = LogNode::new(Config { stop_when });
+    let mut node = LogNode::new(Config {
+        stop_when: opts.stop_when,
+    });
     // `log_id` is a service-level routing handle the node engine never sees
     // (D3): the engine's `Response` carries only `stream_id`. To echo a
     // consistent `log_id` back on every response addressed to a stream — the
@@ -63,10 +83,27 @@ pub fn pump<R: Read, W: Write>(
     // oracle. A natural cross-language shell keeps this per-stream mapping too.
     let mut stream_log_ids: HashMap<String, String> = HashMap::new();
 
+    let mut pending = opts.script.map(Pending::new);
+    // Count of client (stdin) frames processed so far; drives `after_frames`.
+    let mut frames: u64 = 0;
+
+    // `after_frames: 0` fires *before* any client frame (Oracle §7).
+    if let Some(p) = &mut pending {
+        let due = p.take_due(0);
+        inject(&mut node, output, transcript, &stream_log_ids, due)?;
+        output.flush()?;
+    }
+
     loop {
         match framing::read_frame(input)? {
             Ok(None) => {
-                // Clean EOF (incl. truncated tail): drain and exit 0.
+                // Clean EOF (incl. truncated tail). Flush any remaining scripted
+                // injections whose trigger count was never reached (a fallback so
+                // a trailing seal/close is not silently dropped), then exit 0.
+                if let Some(p) = &mut pending {
+                    let rest = p.drain_remaining();
+                    inject(&mut node, output, transcript, &stream_log_ids, rest)?;
+                }
                 output.flush()?;
                 return Ok(0);
             }
@@ -89,6 +126,12 @@ pub fn pump<R: Read, W: Write>(
                     let (tag, body) = encode_output(&out, &stream_log_ids);
                     framing::write_frame(output, tag, &body)?;
                 }
+                // One client frame processed: fire any injections now due.
+                frames += 1;
+                if let Some(p) = &mut pending {
+                    let due = p.take_due(frames);
+                    inject(&mut node, output, transcript, &stream_log_ids, due)?;
+                }
                 output.flush()?;
             }
             Err(fe) => {
@@ -97,6 +140,42 @@ pub fn pump<R: Read, W: Write>(
                 return Ok(3);
             }
         }
+    }
+}
+
+/// Feed scripted producer [`Input`]s to the engine and write their outputs as
+/// data-channel frames, mirroring each to the OOB transcript. `stream_log_ids`
+/// is read-only here: producer inputs create no new streams, so a released
+/// read's `log_id` was already recorded by the `Read` that parked it.
+fn inject<W: Write, T: Write>(
+    node: &mut LogNode,
+    output: &mut W,
+    transcript: &mut T,
+    stream_log_ids: &HashMap<String, String>,
+    inputs: Vec<Input>,
+) -> io::Result<()> {
+    for input in inputs {
+        for out in node.handle(input) {
+            // Best-effort control-channel echo; the data channel is the pin.
+            let log_id = injected_log_id(&out, stream_log_ids);
+            let _ = writeln!(transcript, "{}", jsoncodec::output_to_json(&out, &log_id));
+            let (tag, body) = encode_output(&out, stream_log_ids);
+            framing::write_frame(output, tag, &body)?;
+        }
+    }
+    Ok(())
+}
+
+/// The `log_id` to stamp on a transcript line for an injected output — a
+/// released `Response` looks its stream up in the per-stream map; non-response
+/// outputs carry no stream, so the id is irrelevant (empty).
+fn injected_log_id(out: &Output, stream_log_ids: &HashMap<String, String>) -> String {
+    match out {
+        Output::Response(resp) => stream_log_ids
+            .get(resp.stream_id.0.as_ref())
+            .cloned()
+            .unwrap_or_default(),
+        _ => String::new(),
     }
 }
 
@@ -178,6 +257,71 @@ fn decode_input(frame: &Frame) -> Result<Input, String> {
             ))
         }
     })
+}
+
+/// Encode an engine [`Input`] back into its `(tag, CBOR body)` — the inverse of
+/// [`decode_input`]. The producer-side inputs a `--script` drives carry no
+/// `log_id`, so the `Read`/`EndStream` arms stamp the shared interop `"log-A"`
+/// handle (the only log in single-node interop). Used by the client's `--script`
+/// path to write producer frames toward the peer node.
+pub fn encode_input(input: &Input) -> (LogMsgType, Cbor) {
+    use taut_shape::generated::{LogClose, LogPush as WPush};
+    match input {
+        Input::Push { payload } => (
+            LogMsgType::Push,
+            WPush {
+                payload: payload.clone(),
+            }
+            .to_cbor(),
+        ),
+        Input::Seal => (LogMsgType::Seal, taut_shape::generated::LogSeal {}.to_cbor()),
+        Input::Close { error } => (
+            LogMsgType::Close,
+            LogClose {
+                error: error.as_ref().map(to_wire_error),
+            }
+            .to_cbor(),
+        ),
+        Input::Evict { up_to_seq } => (
+            LogMsgType::Evict,
+            LogEvict {
+                up_to_seq: *up_to_seq as i64,
+            }
+            .to_cbor(),
+        ),
+        Input::Read {
+            stream_id,
+            cursor,
+            limits,
+            timeout_ms,
+        } => (
+            LogMsgType::Read,
+            LogReadRequest {
+                log_id: "log-A".to_string(),
+                stream_id: stream_id.0.to_string(),
+                cursor: cursor.map(|c| LogCursor { seq: c.seq as i64 }),
+                max_records: limits.max_records.map(|n| n as i64),
+                max_bytes: limits.max_bytes.map(|n| n as i64),
+                timeout_ms: timeout_ms.map(|n| n as i64),
+            }
+            .to_cbor(),
+        ),
+        Input::EndStream { stream_id } => (
+            LogMsgType::EndStream,
+            LogEndStream {
+                log_id: "log-A".to_string(),
+                stream_id: stream_id.0.to_string(),
+            }
+            .to_cbor(),
+        ),
+        Input::TimerExpired { token } => (
+            LogMsgType::TimerExpired,
+            LogTimerExpired {
+                token: token.0 as i64,
+            }
+            .to_cbor(),
+        ),
+    }
 }
 
 /// Encode one engine [`Output`] into its `(tag, CBOR body)`. `stream_log_ids`

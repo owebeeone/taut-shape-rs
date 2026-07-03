@@ -12,7 +12,9 @@ repos mirror.
   no clock, no locks, no wakers (D1). Default feature `std`; the shell lands
   behind the `async` feature (implies `std`) in a later phase.
 - `crates/taut-shape-tool` — the conformance/interop CLI (`gen`/`check`/`node`/
-  `client`). Phase 0 stub today.
+  `client`). The `node`/`client` modes drive a `LogNode` over the shared
+  length-prefixed, tagged-CBOR stdin/stdout framing (`src/framing.rs`, the
+  cross-language reference); `gen`/`check` own oracle emission/verification.
 
 The message types in `crates/taut-shape/src/generated.rs` and the CBOR runtime
 in `crates/taut-shape/src/cbor.rs` are **vendored/generated** — do not
@@ -35,7 +37,7 @@ cargo build -p taut-shape
 # The no_std gate — the core must compile with alloc only.
 cargo build -p taut-shape --no-default-features
 
-# The conformance/interop tool (Phase 0 stub: prints usage, exits 2).
+# The conformance/interop tool (gen/check/node/client modes).
 cargo build -p taut-shape-tool
 
 # Whole workspace.
@@ -45,5 +47,8 @@ cargo test
 
 ## Status
 
-Phase 0 (scaffold & contract intake). The engine, golden conformance, shell,
-and CLI modes are not implemented yet — see `dev-docs/InitialPlan.md` phases.
+The engine (`LogNode`), golden conformance (`gen`/`check`), and the `node`/
+`client` interop CLI modes are implemented and green (workspace `cargo test`,
+`clippy`, the `--no-default-features` no_std gate, plus the cross-language
+interop matrix in `../taut-shape/matrix/`). The async shell (`async` feature)
+remains a later phase — see `dev-docs/InitialPlan.md`.

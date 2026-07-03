@@ -2,7 +2,7 @@
 //!
 //! No I/O, no clock, no locks, no callbacks. Held long-polls are ENGINE STATE:
 //! a tail `Read` that cannot be answered is parked in the [session
-//! table](crate::session) and answered when a later input (`Push`/`Seal`/
+//! table](super::session) and answered when a later input (`Push`/`Seal`/
 //! `Close`/`TimerExpired`/`EndStream`) releases it. Outputs are a deterministic
 //! function of the input history (D16). Unsynchronized by design — the shell
 //! owns serialization (D15).
@@ -11,10 +11,10 @@ use alloc::vec;
 use alloc::vec::Vec;
 
 use crate::generated::{LogDiagCode, LogDiagnostic, LogSeverity};
-use crate::msg::{Input, Output, Response};
-use crate::session::{HeldRead, Table};
-use crate::types::{Cursor, Error, Limits, State, StopReason, StreamId, TimerToken};
-use crate::window::{Lifecycle, Window};
+use super::msg::{Input, Output, Response};
+use super::session::{HeldRead, Table};
+use super::types::{Cursor, Error, Limits, State, StopReason, StreamId, TimerToken};
+use super::window::{Lifecycle, Window};
 
 /// Construction knob for `ProducerStop` (D6). A log never read must not
 /// spuriously stop its producer, so the ≥1→0 reader transition is what fires.
@@ -225,7 +225,7 @@ impl LogNode {
         }
     }
 
-    fn on_push(&mut self, payload: crate::types::Bytes) -> Vec<Output> {
+    fn on_push(&mut self, payload: super::types::Bytes) -> Vec<Output> {
         // D19: a Push after any terminal lifecycle (Sealed/Closed/Failed) is
         // dropped — nothing appended, head unchanged — and emits exactly one
         // `push_after_terminal` warning per late push. A late in-flight push is

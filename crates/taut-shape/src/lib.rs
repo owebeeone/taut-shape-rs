@@ -43,24 +43,18 @@ pub mod generated;
 // colliding with the generated `Log*`-prefixed structs. (Intentionally not
 // `pub use generated::*`.)
 
-// ── Phase 1: the engine (§A.1–A.5) ──────────────────────────────────────────
+// ── Phase 1: the `log` shape engine (§A.1–A.5) ──────────────────────────────
 
-/// Core data types (§A.1): `Cursor`, `Record`, `State`, `Error`, `ErrorCode`,
-/// `StreamId`, `TimerToken`, `Limits`, `StopReason`, `Bytes`.
-pub mod types;
+/// The `log` delivery-shape mailbox engine (D23): core types (§A.1), the
+/// `Input`/`Output`/`Response` unions (§A.2–A.3), the session/window split, and
+/// the `LogNode` engine. A future second shape becomes a sibling of this module
+/// while `cbor` and `generated` stay shared at the crate root.
+pub mod log;
 
-/// The hand-written `Input`/`Output` unions + `Response` (§A.2–A.3, D17).
-pub mod msg;
-
-mod node;
-mod session;
-mod window;
-
-pub use msg::{Input, Output, Response};
-pub use node::{Config, LogNode, StopWhen};
-pub use types::{
-    Bytes, Cursor, Error, ErrorCode, Limits, Record, State, StopReason, StreamId, TimerToken,
+// Flat re-exports keep the crate's public API stable across the D23 `log/`
+// module boundary: downstream code (including the tool crate) sees these names
+// at the crate root exactly as before.
+pub use log::{
+    Bytes, Config, Cursor, Error, ErrorCode, Input, Limits, LogNode, Output, Record, Response,
+    State, StopReason, StopWhen, StreamId, TimerToken,
 };
-
-#[cfg(test)]
-mod tests;
