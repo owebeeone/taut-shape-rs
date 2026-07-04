@@ -1,15 +1,21 @@
+# SELF-CONTAINED MANIFEST: concrete literals rather than `*.workspace = true`
+# inheritance, so external workspaces that splice/vendor this manifest (rules_rust
+# crate_universe, future publish) do not hit dangling inheritance. Keep in sync
+# with ../../Cargo.toml [workspace.package] by hand. Nothing external splices this
+# tool crate today, but it is made self-contained to match its sibling.
 [package]
 name = "taut-shape-tool"
 description = "Conformance/interop CLI for taut-shape-rs (gen/check/node/client)."
-version.workspace = true
-edition.workspace = true
-license.workspace = true
-repository.workspace = true
-rust-version.workspace = true
+version = "0.0.0"
+edition = "2021"
+license = "MIT OR Apache-2.0"
+repository = "https://github.com/owebeeone/taut-shape-rs"
+rust-version = "1.75"
 publish = false
 
-[lints]
-workspace = true
+# Inlined from [workspace.lints.rust].
+[lints.rust]
+unsafe_code = "forbid"
 
 [[bin]]
 name = "taut-shape-tool"

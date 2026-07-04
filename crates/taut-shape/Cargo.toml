@@ -1,14 +1,23 @@
+# SELF-CONTAINED MANIFEST: every field below is a concrete literal, NOT a
+# `*.workspace = true` inherited value. External workspaces splice/vendor this
+# manifest without carrying taut-shape-rs's [workspace.package] — e.g. rules_rust
+# crate_universe's synthetic splicing workspace (gwz-dev), and future `cargo
+# publish`. Inherited fields would dangle there ("error inheriting edition from
+# workspace root manifest ... not defined"). Keep values in sync with
+# ../../Cargo.toml [workspace.package] by hand.
 [package]
 name = "taut-shape"
 description = "Reference Rust implementation of the Taut `log` delivery-shape mailbox engine."
-version.workspace = true
-edition.workspace = true
-license.workspace = true
-repository.workspace = true
-rust-version.workspace = true
+version = "0.0.0"
+edition = "2021"
+license = "MIT OR Apache-2.0"
+repository = "https://github.com/owebeeone/taut-shape-rs"
+rust-version = "1.75"
 
-[lints]
-workspace = true
+# Inlined from [workspace.lints.rust] — the core crate must stay no_std-clean;
+# unsafe is not needed anywhere yet.
+[lints.rust]
+unsafe_code = "forbid"
 
 [features]
 # `std` is on by default; the `no_std` gate is `--no-default-features`.
