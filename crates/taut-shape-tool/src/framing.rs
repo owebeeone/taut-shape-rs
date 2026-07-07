@@ -87,24 +87,20 @@ pub fn read_frame<R: Read>(r: &mut R) -> io::Result<Result<Option<Frame>, FrameE
     let tag_byte = frame_buf[0];
     let body_bytes = &frame_buf[1..];
 
-    // 3) tag byte ⇒ LogMsgType. `from_wire` panics on bad values, so range-check
-    //    first and turn an out-of-range tag into a typed error (never a panic).
+    // 3) tag byte ⇒ LogMsgType. The generated `from_wire` is fail-closed
+    //    (returns `Result`), so an out-of-range tag is a typed error directly —
+    //    no separate range-check needed.
     let tag = match wire_to_tag(tag_byte) {
         Some(t) => t,
         None => return Ok(Err(FrameError::UnknownTag(tag_byte))),
     };
 
-    // 4) Decode the CBOR body. `cbor::decode` panics on malformed input, so
-    //    guard it with `catch_unwind` to keep the tool panic-free (exit 3).
-    let body = match std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
-        cbor::decode(body_bytes)
-    })) {
+    // 4) Decode the CBOR body. With the fail-closed runtime, `cbor::try_decode`
+    //    returns a typed error on any malformed input (no panic), so the old
+    //    `catch_unwind` guard is gone — decode is fail-closed at the source.
+    let body = match cbor::try_decode(body_bytes) {
         Ok(c) => c,
-        Err(_) => {
-            return Ok(Err(FrameError::MalformedBody(
-                "CBOR did not decode".to_string(),
-            )))
-        }
+        Err(e) => return Ok(Err(FrameError::MalformedBody(format!("{e}")))),
     };
 
     Ok(Ok(Some(Frame { tag, body })))
@@ -120,16 +116,13 @@ pub fn write_frame<W: Write>(w: &mut W, tag: LogMsgType, body: &Cbor) -> io::Res
     Ok(())
 }
 
-/// Map a raw tag byte to a [`LogMsgType`] without tripping the generated
-/// `from_wire` panic on an out-of-range value.
+/// Map a raw tag byte to a [`LogMsgType`]. The generated `from_wire` is
+/// fail-closed (returns `Result`), so an unknown wire value maps straight to
+/// `None` — no separate range guard.
 fn wire_to_tag(byte: u8) -> Option<LogMsgType> {
-    // 0..=11 are the twelve defined wire values (push..diagnostic). Anything
-    // else has no message and is a malformed frame.
-    if (0..=11).contains(&byte) {
-        Some(LogMsgType::from_wire(byte as i64))
-    } else {
-        None
-    }
+    // The twelve defined wire values (push..diagnostic) decode; anything else
+    // has no message and is a malformed frame.
+    LogMsgType::from_wire(byte as i64).ok()
 }
 
 enum ReadOutcome {

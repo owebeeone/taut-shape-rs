@@ -34,7 +34,7 @@ fn parse_frame(buf: &[u8]) -> (LogMsgType, Cbor, &[u8]) {
     assert!(len >= 1, "frame length must cover at least the tag byte");
     let frame_end = 4 + len;
     assert!(buf.len() >= frame_end, "frame body truncated");
-    let tag = LogMsgType::from_wire(buf[4] as i64);
+    let tag = LogMsgType::from_wire(buf[4] as i64).expect("known frame tag");
     let body = cbor::decode(&buf[5..frame_end]);
     (tag, body, &buf[frame_end..])
 }
@@ -95,7 +95,7 @@ fn push_then_read_round_trips_through_real_pipes() {
     assert_eq!(tag.wire(), LogMsgType::ReadResponse.wire());
     assert!(rest.is_empty(), "unexpected extra output frames: {rest:?}");
 
-    let resp = LogReadResponse::from_cbor(&body);
+    let resp = LogReadResponse::from_cbor(&body).expect("valid read response");
     assert_eq!(resp.log_id, "log-A");
     assert_eq!(resp.stream_id, "s1");
     assert_eq!(resp.records.len(), 1, "expected the one pushed record");
@@ -160,7 +160,7 @@ fn held_release_echoes_the_streams_log_id() {
     let (tag, body, rest) = parse_frame(&out.stdout);
     assert_eq!(tag.wire(), LogMsgType::ReadResponse.wire());
     assert!(rest.is_empty(), "unexpected extra frames: {rest:?}");
-    let resp = LogReadResponse::from_cbor(&body);
+    let resp = LogReadResponse::from_cbor(&body).expect("valid read response");
     assert_eq!(
         resp.log_id, "log-A",
         "a held-release response must echo the stream's originating log_id"

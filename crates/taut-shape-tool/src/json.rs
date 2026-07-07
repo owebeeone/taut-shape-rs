@@ -118,7 +118,8 @@ pub fn s(v: impl Into<String>) -> Json {
 }
 
 /// Convenience: build a `Json::Num` from an integer (rendered as a numeric
-/// *string*, matching taut jsoncodec's i64-as-string convention).
+/// *string*, matching taut jsoncodec's int-as-string convention). Takes `i64`
+/// — the frozen wire int subset the fail-closed codec's `int` fields carry.
 pub fn i64_str(v: i64) -> Json {
     Json::Str(v.to_string())
 }

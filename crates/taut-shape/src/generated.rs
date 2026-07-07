@@ -7,10 +7,14 @@
 // ============================================================================
 // GENERATED — DO NOT EDIT BY HAND.
 //
-// tautc-generated `shape_log` message types + CBOR codec (D17). This file is
-// vendored verbatim from the tautc `gen -l rust --api-only` output below the
-// provenance block; regenerate + re-vendor on any schema bump, never
-// hand-maintain (the gwz-core `protocol/generated.rs` pattern).
+// tautc-generated `shape_log` message types + CBOR codec (D17), in the
+// **fail-closed** decode variant: `from_cbor -> Result<_, DecodeError>` (never
+// panics on malformed/untrusted input) and `int` fields carry `i64` (the frozen
+// wire int subset; an out-of-`i64` wire int is a typed `DecodeError`, not a
+// silent u64 wrap or a wider carry). Vendored verbatim from the tautc
+// `gen -l rust --api-only --fail-closed` output below the provenance block;
+// regenerate + re-vendor on any schema bump, never hand-maintain (the gwz-core
+// `protocol/generated.rs` pattern).
 //
 // NOTE: this file is EXEMPT from `cargo fmt` via the `#![rustfmt::skip]` inner
 // attribute above, so it stays byte-identical to the tautc output; `fmt` would
@@ -18,13 +22,13 @@
 //
 // Source schema : taut-shape/ir/shape_log.taut.py
 //                 (exported IR: taut-shape/ir/shape_log.ir.json)
-// Generator     : taut  @ 70e17b7
+// Generator     : taut  @ 70e17b7 + fail-closed codegen (opt-in --fail-closed)
 // Schema repo   : taut-shape @ 7aa206b + diagnostics (D18/D19: LogSeverity,
 //                 LogDiagCode, LogDiagnostic, LogMsgType.diagnostic=11; uncommitted)
 //
 // Regen (from taut-dev/taut-shape):
 //   PYTHONPATH=../taut/src python3 -m taut.cli gen ir/shape_log.taut.py \
-//       -o <out> -l rust --api-only
+//       -o <out> -l rust --api-only --fail-closed
 //   cp <out>/rust/api.rs crates/taut-shape/src/generated.rs   # then re-add this header
 //
 // no_std note: the codec below uses `Vec`/`String`/`vec!`; the core crate is
@@ -35,7 +39,7 @@
 #[allow(unused_imports)]
 use alloc::{string::String, vec, vec::Vec};
 
-use crate::cbor::Cbor;
+use crate::cbor::{Cbor, DecodeError};
 
 #[derive(Clone, Copy, Debug, PartialEq, Default)]
 pub enum LogMsgType {
@@ -67,7 +71,7 @@ impl LogMsgType {
         Self::ProducerStop => 10,
         Self::Diagnostic => 11,
     } }
-    pub fn from_wire(v: i64) -> Self { match v {
+    pub fn from_wire(v: i64) -> Result<Self, DecodeError> { Ok(match v {
         0 => Self::Push,
         1 => Self::Seal,
         2 => Self::Close,
@@ -80,8 +84,8 @@ impl LogMsgType {
         9 => Self::CancelTimer,
         10 => Self::ProducerStop,
         11 => Self::Diagnostic,
-        _ => panic!("bad LogMsgType wire value {}", v),
-    } }
+        _ => return Err(DecodeError::UnknownEnum { enum_name: "LogMsgType", value: v }),
+    }) }
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Default)]
@@ -102,15 +106,15 @@ impl LogState {
         Self::Failed => 4,
         Self::Expired => 5,
     } }
-    pub fn from_wire(v: i64) -> Self { match v {
+    pub fn from_wire(v: i64) -> Result<Self, DecodeError> { Ok(match v {
         0 => Self::Data,
         1 => Self::WouldBlock,
         2 => Self::Eof,
         3 => Self::Closed,
         4 => Self::Failed,
         5 => Self::Expired,
-        _ => panic!("bad LogState wire value {}", v),
-    } }
+        _ => return Err(DecodeError::UnknownEnum { enum_name: "LogState", value: v }),
+    }) }
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Default)]
@@ -125,12 +129,12 @@ impl LogErrorCode {
         Self::ProducerError => 1,
         Self::Internal => 2,
     } }
-    pub fn from_wire(v: i64) -> Self { match v {
+    pub fn from_wire(v: i64) -> Result<Self, DecodeError> { Ok(match v {
         0 => Self::UnknownLog,
         1 => Self::ProducerError,
         2 => Self::Internal,
-        _ => panic!("bad LogErrorCode wire value {}", v),
-    } }
+        _ => return Err(DecodeError::UnknownEnum { enum_name: "LogErrorCode", value: v }),
+    }) }
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Default)]
@@ -145,12 +149,12 @@ impl LogStopReason {
         Self::Closed => 1,
         Self::Failed => 2,
     } }
-    pub fn from_wire(v: i64) -> Self { match v {
+    pub fn from_wire(v: i64) -> Result<Self, DecodeError> { Ok(match v {
         0 => Self::LastReaderGone,
         1 => Self::Closed,
         2 => Self::Failed,
-        _ => panic!("bad LogStopReason wire value {}", v),
-    } }
+        _ => return Err(DecodeError::UnknownEnum { enum_name: "LogStopReason", value: v }),
+    }) }
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Default)]
@@ -163,11 +167,11 @@ impl LogSeverity {
         Self::Warn => 0,
         Self::Error => 1,
     } }
-    pub fn from_wire(v: i64) -> Self { match v {
+    pub fn from_wire(v: i64) -> Result<Self, DecodeError> { Ok(match v {
         0 => Self::Warn,
         1 => Self::Error,
-        _ => panic!("bad LogSeverity wire value {}", v),
-    } }
+        _ => return Err(DecodeError::UnknownEnum { enum_name: "LogSeverity", value: v }),
+    }) }
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Default)]
@@ -178,10 +182,10 @@ impl LogDiagCode {
     pub fn wire(self) -> i64 { match self {
         Self::PushAfterTerminal => 0,
     } }
-    pub fn from_wire(v: i64) -> Self { match v {
+    pub fn from_wire(v: i64) -> Result<Self, DecodeError> { Ok(match v {
         0 => Self::PushAfterTerminal,
-        _ => panic!("bad LogDiagCode wire value {}", v),
-    } }
+        _ => return Err(DecodeError::UnknownEnum { enum_name: "LogDiagCode", value: v }),
+    }) }
 }
 
 #[derive(Clone, Debug, PartialEq, Default)]
@@ -194,10 +198,10 @@ impl LogCursor {
             (1, Cbor::Int(self.seq)),
         ])
     }
-    pub fn from_cbor(c: &Cbor) -> Self {
-        Self {
-            seq: c.get(1).int(),
-        }
+    pub fn from_cbor(c: &Cbor) -> Result<Self, DecodeError> {
+        Ok(Self {
+            seq: c.try_get(1)?.try_int()?,
+        })
     }
 }
 
@@ -213,11 +217,11 @@ impl LogRecord {
             (2, Cbor::Bytes(self.payload.clone())),
         ])
     }
-    pub fn from_cbor(c: &Cbor) -> Self {
-        Self {
-            seq: c.get(1).int(),
-            payload: c.get(2).bytes(),
-        }
+    pub fn from_cbor(c: &Cbor) -> Result<Self, DecodeError> {
+        Ok(Self {
+            seq: c.try_get(1)?.try_int()?,
+            payload: c.try_get(2)?.try_bytes()?,
+        })
     }
 }
 
@@ -233,11 +237,11 @@ impl LogError {
             (2, match &self.message { Some(v) => Cbor::Text(v.clone()), None => Cbor::Null }),
         ])
     }
-    pub fn from_cbor(c: &Cbor) -> Self {
-        Self {
-            code: LogErrorCode::from_wire(c.get(1).int()),
-            message: { let v = c.get(2); if v.is_null() { None } else { Some(v.text()) } },
-        }
+    pub fn from_cbor(c: &Cbor) -> Result<Self, DecodeError> {
+        Ok(Self {
+            code: LogErrorCode::from_wire(c.try_get(1)?.try_int()?)?,
+            message: { let v = c.try_get(2)?; if v.is_null() { None } else { Some(v.try_text()?) } },
+        })
     }
 }
 
@@ -251,10 +255,10 @@ impl LogPush {
             (1, Cbor::Bytes(self.payload.clone())),
         ])
     }
-    pub fn from_cbor(c: &Cbor) -> Self {
-        Self {
-            payload: c.get(1).bytes(),
-        }
+    pub fn from_cbor(c: &Cbor) -> Result<Self, DecodeError> {
+        Ok(Self {
+            payload: c.try_get(1)?.try_bytes()?,
+        })
     }
 }
 
@@ -266,9 +270,9 @@ impl LogSeal {
         Cbor::Map(vec![
         ])
     }
-    pub fn from_cbor(c: &Cbor) -> Self {
-        Self {
-        }
+    pub fn from_cbor(c: &Cbor) -> Result<Self, DecodeError> {
+        Ok(Self {
+        })
     }
 }
 
@@ -282,10 +286,10 @@ impl LogClose {
             (1, match &self.error { Some(v) => v.to_cbor(), None => Cbor::Null }),
         ])
     }
-    pub fn from_cbor(c: &Cbor) -> Self {
-        Self {
-            error: { let v = c.get(1); if v.is_null() { None } else { Some(LogError::from_cbor(v)) } },
-        }
+    pub fn from_cbor(c: &Cbor) -> Result<Self, DecodeError> {
+        Ok(Self {
+            error: { let v = c.try_get(1)?; if v.is_null() { None } else { Some(LogError::from_cbor(v)?) } },
+        })
     }
 }
 
@@ -309,15 +313,15 @@ impl LogReadRequest {
             (6, match &self.timeout_ms { Some(v) => Cbor::Int(*v), None => Cbor::Null }),
         ])
     }
-    pub fn from_cbor(c: &Cbor) -> Self {
-        Self {
-            log_id: c.get(1).text(),
-            stream_id: c.get(2).text(),
-            cursor: { let v = c.get(3); if v.is_null() { None } else { Some(LogCursor::from_cbor(v)) } },
-            max_records: { let v = c.get(4); if v.is_null() { None } else { Some(v.int()) } },
-            max_bytes: { let v = c.get(5); if v.is_null() { None } else { Some(v.int()) } },
-            timeout_ms: { let v = c.get(6); if v.is_null() { None } else { Some(v.int()) } },
-        }
+    pub fn from_cbor(c: &Cbor) -> Result<Self, DecodeError> {
+        Ok(Self {
+            log_id: c.try_get(1)?.try_text()?,
+            stream_id: c.try_get(2)?.try_text()?,
+            cursor: { let v = c.try_get(3)?; if v.is_null() { None } else { Some(LogCursor::from_cbor(v)?) } },
+            max_records: { let v = c.try_get(4)?; if v.is_null() { None } else { Some(v.try_int()?) } },
+            max_bytes: { let v = c.try_get(5)?; if v.is_null() { None } else { Some(v.try_int()?) } },
+            timeout_ms: { let v = c.try_get(6)?; if v.is_null() { None } else { Some(v.try_int()?) } },
+        })
     }
 }
 
@@ -333,11 +337,11 @@ impl LogEndStream {
             (2, Cbor::Text(self.stream_id.clone())),
         ])
     }
-    pub fn from_cbor(c: &Cbor) -> Self {
-        Self {
-            log_id: c.get(1).text(),
-            stream_id: c.get(2).text(),
-        }
+    pub fn from_cbor(c: &Cbor) -> Result<Self, DecodeError> {
+        Ok(Self {
+            log_id: c.try_get(1)?.try_text()?,
+            stream_id: c.try_get(2)?.try_text()?,
+        })
     }
 }
 
@@ -351,10 +355,10 @@ impl LogTimerExpired {
             (1, Cbor::Int(self.token)),
         ])
     }
-    pub fn from_cbor(c: &Cbor) -> Self {
-        Self {
-            token: c.get(1).int(),
-        }
+    pub fn from_cbor(c: &Cbor) -> Result<Self, DecodeError> {
+        Ok(Self {
+            token: c.try_get(1)?.try_int()?,
+        })
     }
 }
 
@@ -368,10 +372,10 @@ impl LogEvict {
             (1, Cbor::Int(self.up_to_seq)),
         ])
     }
-    pub fn from_cbor(c: &Cbor) -> Self {
-        Self {
-            up_to_seq: c.get(1).int(),
-        }
+    pub fn from_cbor(c: &Cbor) -> Result<Self, DecodeError> {
+        Ok(Self {
+            up_to_seq: c.try_get(1)?.try_int()?,
+        })
     }
 }
 
@@ -395,15 +399,15 @@ impl LogReadResponse {
             (6, match &self.error { Some(v) => v.to_cbor(), None => Cbor::Null }),
         ])
     }
-    pub fn from_cbor(c: &Cbor) -> Self {
-        Self {
-            log_id: c.get(1).text(),
-            stream_id: c.get(2).text(),
-            records: c.get(3).array().iter().map(|x| LogRecord::from_cbor(x)).collect(),
-            next_cursor: LogCursor::from_cbor(c.get(4)),
-            state: LogState::from_wire(c.get(5).int()),
-            error: { let v = c.get(6); if v.is_null() { None } else { Some(LogError::from_cbor(v)) } },
-        }
+    pub fn from_cbor(c: &Cbor) -> Result<Self, DecodeError> {
+        Ok(Self {
+            log_id: c.try_get(1)?.try_text()?,
+            stream_id: c.try_get(2)?.try_text()?,
+            records: c.try_get(3)?.try_array()?.iter().map(|x| LogRecord::from_cbor(x)).collect::<Result<Vec<_>, DecodeError>>()?,
+            next_cursor: LogCursor::from_cbor(c.try_get(4)?)?,
+            state: LogState::from_wire(c.try_get(5)?.try_int()?)?,
+            error: { let v = c.try_get(6)?; if v.is_null() { None } else { Some(LogError::from_cbor(v)?) } },
+        })
     }
 }
 
@@ -419,11 +423,11 @@ impl LogSetTimer {
             (2, Cbor::Int(self.ms)),
         ])
     }
-    pub fn from_cbor(c: &Cbor) -> Self {
-        Self {
-            token: c.get(1).int(),
-            ms: c.get(2).int(),
-        }
+    pub fn from_cbor(c: &Cbor) -> Result<Self, DecodeError> {
+        Ok(Self {
+            token: c.try_get(1)?.try_int()?,
+            ms: c.try_get(2)?.try_int()?,
+        })
     }
 }
 
@@ -437,10 +441,10 @@ impl LogCancelTimer {
             (1, Cbor::Int(self.token)),
         ])
     }
-    pub fn from_cbor(c: &Cbor) -> Self {
-        Self {
-            token: c.get(1).int(),
-        }
+    pub fn from_cbor(c: &Cbor) -> Result<Self, DecodeError> {
+        Ok(Self {
+            token: c.try_get(1)?.try_int()?,
+        })
     }
 }
 
@@ -454,10 +458,10 @@ impl LogProducerStop {
             (1, Cbor::Int(self.reason.wire())),
         ])
     }
-    pub fn from_cbor(c: &Cbor) -> Self {
-        Self {
-            reason: LogStopReason::from_wire(c.get(1).int()),
-        }
+    pub fn from_cbor(c: &Cbor) -> Result<Self, DecodeError> {
+        Ok(Self {
+            reason: LogStopReason::from_wire(c.try_get(1)?.try_int()?)?,
+        })
     }
 }
 
@@ -473,10 +477,10 @@ impl LogDiagnostic {
             (2, Cbor::Int(self.code.wire())),
         ])
     }
-    pub fn from_cbor(c: &Cbor) -> Self {
-        Self {
-            severity: LogSeverity::from_wire(c.get(1).int()),
-            code: LogDiagCode::from_wire(c.get(2).int()),
-        }
+    pub fn from_cbor(c: &Cbor) -> Result<Self, DecodeError> {
+        Ok(Self {
+            severity: LogSeverity::from_wire(c.try_get(1)?.try_int()?)?,
+            code: LogDiagCode::from_wire(c.try_get(2)?.try_int()?)?,
+        })
     }
 }

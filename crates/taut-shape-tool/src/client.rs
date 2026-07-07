@@ -119,7 +119,15 @@ pub fn drive<R: Read, W: Write, T: Write>(
                 }
             };
             match frame.tag {
-                LogMsgType::ReadResponse => break LogReadResponse::from_cbor(&frame.body),
+                LogMsgType::ReadResponse => match LogReadResponse::from_cbor(&frame.body) {
+                    // Fail-closed: a malformed response body is a protocol error
+                    // (exit 3), not a panic.
+                    Ok(r) => break r,
+                    Err(e) => {
+                        eprintln!("taut-shape-tool client: malformed read response: {e}");
+                        return Ok(3);
+                    }
+                },
                 // A terminal producer signal — the producer is done.
                 LogMsgType::ProducerStop => {
                     emit_final(transcript, "producer_stop")?;

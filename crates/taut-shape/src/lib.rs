@@ -32,9 +32,15 @@ pub mod cbor;
 /// vendored output stays byte-identical to `tautc` while still passing a
 /// `clippy -D warnings` CI gate: `unused_variables` for empty generated
 /// messages whose `from_cbor(c)` ignores its `Cbor` argument (e.g. `LogSeal`),
-/// and `clippy::redundant_closure` for the generator's `|x| T::from_cbor(x)`
-/// mapping style.
-#[allow(unused_variables, clippy::redundant_closure)]
+/// `clippy::redundant_closure` for the generator's `|x| T::from_cbor(x)`
+/// mapping style, and `clippy::needless_question_mark` for the fail-closed
+/// codec's `|x| Ok(T::from_cbor(x)?)` list/map element mapping (the generic
+/// `Ok(..?)` wrapper is uniform across scalar and message elements).
+#[allow(
+    unused_variables,
+    clippy::redundant_closure,
+    clippy::needless_question_mark
+)]
 pub mod generated;
 
 // The generated `shape_log` message vocabulary (D17) stays namespaced under

@@ -190,7 +190,9 @@ fn read_echo(frame: &Frame) -> Option<ReadEcho> {
     if !matches!(frame.tag, LogMsgType::Read) {
         return None;
     }
-    let req = LogReadRequest::from_cbor(&frame.body);
+    // Fail-closed decode: a malformed body yields None (no echo) rather than a
+    // panic.
+    let req = LogReadRequest::from_cbor(&frame.body).ok()?;
     Some(ReadEcho {
         log_id: req.log_id,
         stream_id: req.stream_id,
@@ -201,22 +203,25 @@ fn read_echo(frame: &Frame) -> Option<ReadEcho> {
 /// a frame whose tag is an *output* kind (or otherwise not a valid input) —
 /// mapped by the caller to exit 3.
 fn decode_input(frame: &Frame) -> Result<Input, String> {
+    // Fail-closed: a body that does not decode to the expected shape is mapped
+    // to the `Err(String)` the caller turns into exit 3 — never a panic.
+    let bad = |e: taut_shape::cbor::DecodeError| format!("malformed {:?} body: {e}", frame.tag);
     Ok(match frame.tag {
         LogMsgType::Push => {
-            let m = LogPush::from_cbor(&frame.body);
+            let m = LogPush::from_cbor(&frame.body).map_err(bad)?;
             Input::Push { payload: m.payload }
         }
         LogMsgType::Seal => Input::Seal,
         LogMsgType::Close => {
             // `LogClose.error` is present on the wire but the engine's on_close
             // takes an `Option<Error>`; convert (message string is preserved).
-            let m = taut_shape::generated::LogClose::from_cbor(&frame.body);
+            let m = taut_shape::generated::LogClose::from_cbor(&frame.body).map_err(bad)?;
             Input::Close {
                 error: m.error.map(from_wire_error),
             }
         }
         LogMsgType::Read => {
-            let m = LogReadRequest::from_cbor(&frame.body);
+            let m = LogReadRequest::from_cbor(&frame.body).map_err(bad)?;
             Input::Read {
                 stream_id: m.stream_id.as_str().into(),
                 cursor: m.cursor.map(|c| Cursor::new(c.seq as u64)),
@@ -228,19 +233,19 @@ fn decode_input(frame: &Frame) -> Result<Input, String> {
             }
         }
         LogMsgType::EndStream => {
-            let m = LogEndStream::from_cbor(&frame.body);
+            let m = LogEndStream::from_cbor(&frame.body).map_err(bad)?;
             Input::EndStream {
                 stream_id: m.stream_id.as_str().into(),
             }
         }
         LogMsgType::TimerExpired => {
-            let m = LogTimerExpired::from_cbor(&frame.body);
+            let m = LogTimerExpired::from_cbor(&frame.body).map_err(bad)?;
             Input::TimerExpired {
                 token: taut_shape::TimerToken(m.token as u64),
             }
         }
         LogMsgType::Evict => {
-            let m = LogEvict::from_cbor(&frame.body);
+            let m = LogEvict::from_cbor(&frame.body).map_err(bad)?;
             Input::Evict {
                 up_to_seq: m.up_to_seq as u64,
             }
