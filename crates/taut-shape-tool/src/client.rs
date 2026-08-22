@@ -43,7 +43,7 @@ pub struct Opts {
     pub max_records: Option<u32>,
     /// Optional `--script`: producer frames written to stdout after the k-th
     /// request the client sends (client-side producer injection, §7).
-    pub script: Option<Script>,
+    pub script: Option<Script<Input>>,
 }
 
 /// Run the client loop against real stdin/stdout. Exit codes match the node:
@@ -118,7 +118,17 @@ pub fn drive<R: Read, W: Write, T: Write>(
                     return Ok(3);
                 }
             };
-            match frame.tag {
+            let tag = match LogMsgType::from_wire(frame.tag as i64) {
+                Ok(tag) => tag,
+                Err(_) => {
+                    eprintln!(
+                        "taut-shape-tool client: TAUT_SHAPE_UNKNOWN_TAG: unknown frame tag byte {}",
+                        frame.tag
+                    );
+                    return Ok(3);
+                }
+            };
+            match tag {
                 LogMsgType::ReadResponse => match LogReadResponse::from_cbor(&frame.body) {
                     // Fail-closed: a malformed response body is a protocol error
                     // (exit 3), not a panic.

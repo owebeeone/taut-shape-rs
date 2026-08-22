@@ -69,7 +69,10 @@ pub fn input_from_json(v: &Json) -> Result<Input, String> {
                 stream_id: stream_id.into(),
                 cursor,
                 limits: Limits {
-                    max_records: v.get("max_records").and_then(Json::as_i64).map(|n| n as u32),
+                    max_records: v
+                        .get("max_records")
+                        .and_then(Json::as_i64)
+                        .map(|n| n as u32),
                     max_bytes: v.get("max_bytes").and_then(Json::as_i64).map(|n| n as u64),
                 },
                 timeout_ms: v.get("timeout_ms").and_then(Json::as_i64).map(|n| n as u64),

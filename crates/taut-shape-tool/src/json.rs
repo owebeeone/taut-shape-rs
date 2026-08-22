@@ -275,17 +275,11 @@ impl Parser<'_> {
                     // decode a full char from the byte stream.
                     let start = self.pos - 1;
                     // advance over any continuation bytes (0b10xxxxxx)
-                    while self
-                        .bytes
-                        .get(self.pos)
-                        .is_some_and(|&c| c & 0xC0 == 0x80)
-                    {
+                    while self.bytes.get(self.pos).is_some_and(|&c| c & 0xC0 == 0x80) {
                         self.pos += 1;
                     }
                     let chunk = &self.bytes[start..self.pos];
-                    out.push_str(
-                        std::str::from_utf8(chunk).map_err(|_| "invalid utf8 in string")?,
-                    );
+                    out.push_str(std::str::from_utf8(chunk).map_err(|_| "invalid utf8 in string")?);
                 }
             }
         }
@@ -457,7 +451,9 @@ mod tests {
         assert_eq!(v.get("stream_id").and_then(Json::as_str), Some("s1"));
         assert_eq!(v.get("max_records").and_then(Json::as_i64), Some(10));
         assert_eq!(
-            v.get("cursor").and_then(|c| c.get("seq")).and_then(Json::as_i64),
+            v.get("cursor")
+                .and_then(|c| c.get("seq"))
+                .and_then(Json::as_i64),
             Some(0)
         );
     }

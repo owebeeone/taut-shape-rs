@@ -13,7 +13,7 @@
 //!   the length prefix itself: the 1 tag byte **plus** the CBOR body. So the
 //!   number of body bytes is `length - 1` and the total frame size on the wire
 //!   is `4 + length`.
-//! * **tag** — the generated [`LogMsgType`] wire value as a single byte (0..=11).
+//! * **tag** — the selected shape's message-type wire value as a single byte.
 //! * **body** — the message's deterministic-CBOR encoding (the generated
 //!   `to_cbor()` fed through [`taut_shape::cbor::encode`]).
 //!
@@ -26,10 +26,15 @@ use std::io::{self, Read, Write};
 
 use taut_shape::cbor::{self, Cbor};
 use taut_shape::generated::LogMsgType;
+use taut_shape::generated_atom::AtomMsgType;
+use taut_shape::generated_crdt::CrdtMsgType;
+use taut_shape::generated_stream::StreamMsgType;
+use taut_shape::generated_swmr::SwmrMsgType;
+use taut_shape::generated_value::ValueMsgType;
 
 /// A decoded frame: the message kind (as its wire tag) and the CBOR body.
 pub struct Frame {
-    pub tag: LogMsgType,
+    pub tag: u8,
     pub body: Cbor,
 }
 
@@ -38,8 +43,6 @@ pub struct Frame {
 /// frame to exit 3 while treating EOF as exit 0.
 #[derive(Debug)]
 pub enum FrameError {
-    /// The 1 tag byte was not a known [`LogMsgType`] wire value.
-    UnknownTag(u8),
     /// The CBOR body did not decode, or decoded to the wrong shape for its tag.
     MalformedBody(String),
     /// A `length` prefix that cannot be a valid frame (a zero length leaves no
@@ -47,10 +50,17 @@ pub enum FrameError {
     BadLength(u32),
 }
 
+impl FrameError {
+    pub const fn code(&self) -> &'static str {
+        match self {
+            Self::MalformedBody(_) | Self::BadLength(_) => "TAUT_SHAPE_MALFORMED_MESSAGE",
+        }
+    }
+}
+
 impl core::fmt::Display for FrameError {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         match self {
-            FrameError::UnknownTag(t) => write!(f, "unknown frame tag byte {t}"),
             FrameError::MalformedBody(m) => write!(f, "malformed frame body: {m}"),
             FrameError::BadLength(n) => write!(f, "bad frame length {n} (min 1 for the tag byte)"),
         }
@@ -87,15 +97,8 @@ pub fn read_frame<R: Read>(r: &mut R) -> io::Result<Result<Option<Frame>, FrameE
     let tag_byte = frame_buf[0];
     let body_bytes = &frame_buf[1..];
 
-    // 3) tag byte ⇒ LogMsgType. The generated `from_wire` is fail-closed
-    //    (returns `Result`), so an out-of-range tag is a typed error directly —
-    //    no separate range-check needed.
-    let tag = match wire_to_tag(tag_byte) {
-        Some(t) => t,
-        None => return Ok(Err(FrameError::UnknownTag(tag_byte))),
-    };
-
-    // 4) Decode the CBOR body. With the fail-closed runtime, `cbor::try_decode`
+    // 3) Decode the CBOR body. The selected shape adapter validates the raw tag
+    //    before dispatch, since tag registries intentionally overlap by shape.
     //    returns a typed error on any malformed input (no panic), so the old
     //    `catch_unwind` guard is gone — decode is fail-closed at the source.
     let body = match cbor::try_decode(body_bytes) {
@@ -103,26 +106,66 @@ pub fn read_frame<R: Read>(r: &mut R) -> io::Result<Result<Option<Frame>, FrameE
         Err(e) => return Ok(Err(FrameError::MalformedBody(format!("{e}")))),
     };
 
-    Ok(Ok(Some(Frame { tag, body })))
+    Ok(Ok(Some(Frame {
+        tag: tag_byte,
+        body,
+    })))
+}
+
+pub trait FrameTag {
+    fn byte(self) -> u8;
+}
+
+impl FrameTag for u8 {
+    fn byte(self) -> u8 {
+        self
+    }
+}
+
+impl FrameTag for LogMsgType {
+    fn byte(self) -> u8 {
+        self.wire() as u8
+    }
+}
+
+impl FrameTag for ValueMsgType {
+    fn byte(self) -> u8 {
+        self.wire() as u8
+    }
+}
+
+impl FrameTag for AtomMsgType {
+    fn byte(self) -> u8 {
+        self.wire() as u8
+    }
+}
+
+impl FrameTag for CrdtMsgType {
+    fn byte(self) -> u8 {
+        self.wire() as u8
+    }
+}
+
+impl FrameTag for StreamMsgType {
+    fn byte(self) -> u8 {
+        self.wire() as u8
+    }
+}
+
+impl FrameTag for SwmrMsgType {
+    fn byte(self) -> u8 {
+        self.wire() as u8
+    }
 }
 
 /// Write one frame to `w`: `u32-LE (1 + body.len())`, the tag byte, then body.
-pub fn write_frame<W: Write>(w: &mut W, tag: LogMsgType, body: &Cbor) -> io::Result<()> {
+pub fn write_frame<W: Write, T: FrameTag>(w: &mut W, tag: T, body: &Cbor) -> io::Result<()> {
     let encoded = cbor::encode(body);
     let len = (encoded.len() + 1) as u32; // + 1 for the tag byte
     w.write_all(&len.to_le_bytes())?;
-    w.write_all(&[tag.wire() as u8])?;
+    w.write_all(&[tag.byte()])?;
     w.write_all(&encoded)?;
     Ok(())
-}
-
-/// Map a raw tag byte to a [`LogMsgType`]. The generated `from_wire` is
-/// fail-closed (returns `Result`), so an unknown wire value maps straight to
-/// `None` — no separate range guard.
-fn wire_to_tag(byte: u8) -> Option<LogMsgType> {
-    // The twelve defined wire values (push..diagnostic) decode; anything else
-    // has no message and is a malformed frame.
-    LogMsgType::from_wire(byte as i64).ok()
 }
 
 enum ReadOutcome {
@@ -147,4 +190,18 @@ fn read_exact_or_eof<R: Read>(r: &mut R, buf: &mut [u8]) -> io::Result<ReadOutco
         }
     }
     Ok(ReadOutcome::Filled)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn raw_tag_is_deferred_to_the_selected_shape_adapter() {
+        // Empty maps are valid CBOR bodies; 99 is intentionally not rejected
+        // here because only the selected shape owns the tag registry.
+        let mut bytes = &[2, 0, 0, 0, 99, 0xa0][..];
+        let frame = read_frame(&mut bytes).unwrap().unwrap().unwrap();
+        assert_eq!(frame.tag, 99);
+    }
 }

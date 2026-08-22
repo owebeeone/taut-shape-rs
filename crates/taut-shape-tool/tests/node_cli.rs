@@ -67,6 +67,8 @@ fn push_then_read_round_trips_through_real_pipes() {
     let bin = env!("CARGO_BIN_EXE_taut-shape-tool");
     let mut child = Command::new(bin)
         .arg("node")
+        .arg("--shape")
+        .arg("log")
         .stdin(Stdio::piped())
         .stdout(Stdio::piped())
         .stderr(Stdio::piped())
@@ -217,4 +219,27 @@ fn clean_eof_between_frames_exits_0() {
     let status = child.wait().unwrap();
     assert!(status.success(), "clean EOF ⇒ exit 0");
     assert!(buf.is_empty(), "no input ⇒ no output frames");
+}
+
+#[test]
+fn unsupported_shape_exits_before_node_or_client_startup() {
+    let bin = env!("CARGO_BIN_EXE_taut-shape-tool");
+    for mode in ["node", "client"] {
+        let out = Command::new(bin)
+            .arg(mode)
+            .arg("--shape")
+            .arg("window")
+            .output()
+            .expect("run taut-shape-tool");
+        assert_eq!(out.status.code(), Some(2), "{mode} unsupported shape");
+        assert!(
+            out.stdout.is_empty(),
+            "{mode} must not start the data channel"
+        );
+        let stderr = String::from_utf8_lossy(&out.stderr);
+        assert!(
+            stderr.contains("TAUT_SHAPE_UNSUPPORTED_SHAPE") && stderr.contains("window"),
+            "{mode} typed diagnostic: {stderr}"
+        );
+    }
 }

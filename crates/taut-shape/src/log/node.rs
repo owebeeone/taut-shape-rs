@@ -10,11 +10,11 @@
 use alloc::vec;
 use alloc::vec::Vec;
 
-use crate::generated::{LogDiagCode, LogDiagnostic, LogSeverity};
 use super::msg::{Input, Output, Response};
 use super::session::{HeldRead, Table};
 use super::types::{Cursor, Error, Limits, State, StopReason, StreamId, TimerToken};
 use super::window::{Lifecycle, Window};
+use crate::generated::{LogDiagCode, LogDiagnostic, LogSeverity};
 
 /// Construction knob for `ProducerStop` (D6). A log never read must not
 /// spuriously stop its producer, so the ≥1→0 reader transition is what fires.
@@ -116,12 +116,10 @@ impl LogNode {
 
         // D5 supersede: a new Read on a stream with a held read drops the old
         // one unanswered and cancels its timer.
-        {
-            let entry = self.sessions.get_or_create(&stream_id);
-            if let Some(prev) = entry.held.take() {
-                if let Some(tok) = prev.timer {
-                    out.push(Output::CancelTimer { token: tok });
-                }
+        self.sessions.get_or_create(&stream_id);
+        if let Some(prev) = self.sessions.clear_held(&stream_id) {
+            if let Some(tok) = prev.timer {
+                out.push(Output::CancelTimer { token: tok });
             }
         }
 
@@ -173,22 +171,26 @@ impl LogNode {
                     }
                     None => {
                         // Hold indefinitely.
-                        let entry = self.sessions.get_mut(&stream_id).unwrap();
-                        entry.held = Some(HeldRead {
-                            cursor,
-                            limits,
-                            timer: None,
-                        });
+                        self.sessions.set_held(
+                            &stream_id,
+                            HeldRead {
+                                cursor,
+                                limits,
+                                timer: None,
+                            },
+                        );
                     }
                     Some(ms) => {
                         // Hold + SetTimer.
                         let token = self.alloc_timer();
-                        let entry = self.sessions.get_mut(&stream_id).unwrap();
-                        entry.held = Some(HeldRead {
-                            cursor,
-                            limits,
-                            timer: Some(token),
-                        });
+                        self.sessions.set_held(
+                            &stream_id,
+                            HeldRead {
+                                cursor,
+                                limits,
+                                timer: Some(token),
+                            },
+                        );
                         out.push(Output::SetTimer { token, ms });
                     }
                 }
@@ -305,23 +307,12 @@ impl LogNode {
 
     fn on_timer_expired(&mut self, token: TimerToken) -> Vec<Output> {
         // Find the held read waiting on this token; answer it would_block.
-        // Unknown/canceled token = no-op.
-        let target = self
-            .sessions
-            .held_in_creation_order()
-            .into_iter()
-            .find(|id| {
-                self.sessions
-                    .get(id)
-                    .and_then(|e| e.held.as_ref())
-                    .and_then(|h| h.timer)
-                    == Some(token)
-            });
-        let Some(id) = target else {
+        // Unknown/canceled token = no-op. 56-F6: O(log H) index lookup
+        // instead of scanning held reads for a matching token.
+        let Some(id) = self.sessions.find_by_timer(token) else {
             return Vec::new();
         };
-        let entry = self.sessions.get_mut(&id).unwrap();
-        let held = entry.held.take().unwrap();
+        let held = self.sessions.clear_held(&id).unwrap();
         vec![Output::Response(Response {
             stream_id: id,
             records: Vec::new(),
@@ -339,19 +330,16 @@ impl LogNode {
     /// live is re-parked, untouched.
     fn release_held(&mut self) -> Vec<Output> {
         let mut out = Vec::new();
+        // 56-F6: held_in_creation_order() is O(H), not O(S) / O(S + H log H).
         for id in self.sessions.held_in_creation_order() {
             // Take the held read; re-resolve from its parked cursor.
-            let held = {
-                let entry = self.sessions.get_mut(&id).unwrap();
-                entry.held.take().unwrap()
-            };
+            let held = self.sessions.clear_held(&id).unwrap();
             let resp = self.resolve_held(&id, &held, &mut out);
             match resp {
                 Some(response) => out.push(Output::Response(response)),
                 None => {
                     // Still cannot answer (caught up + live): re-park it.
-                    let entry = self.sessions.get_mut(&id).unwrap();
-                    entry.held = Some(held);
+                    self.sessions.set_held(&id, held);
                 }
             }
         }

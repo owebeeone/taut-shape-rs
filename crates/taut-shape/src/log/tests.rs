@@ -6,11 +6,11 @@
 use alloc::vec;
 use alloc::vec::Vec;
 
-use crate::generated::{LogDiagCode, LogDiagnostic, LogSeverity};
 use super::{
     Config, Cursor, Error, ErrorCode, Input, Limits, LogNode, Output, Record, Response, State,
     StopReason, StopWhen, StreamId, TimerToken,
 };
+use crate::generated::{LogDiagCode, LogDiagnostic, LogSeverity};
 
 // ── helpers ─────────────────────────────────────────────────────────────────
 
@@ -621,7 +621,9 @@ fn d6_close_after_seal_is_a_transition_and_stops_producer() {
     push(&mut n, b"a");
     let sealed = n.handle(Input::Seal);
     assert!(
-        !sealed.iter().any(|o| matches!(o, Output::ProducerStop { .. })),
+        !sealed
+            .iter()
+            .any(|o| matches!(o, Output::ProducerStop { .. })),
         "Seal must not stop the producer: {sealed:?}"
     );
     let out = n.handle(Input::Close { error: None });
@@ -643,7 +645,10 @@ fn d6_close_after_seal_is_a_transition_and_stops_producer() {
     assert_eq!(only_response(&probe).state, State::Closed);
     // A second Close (now Closed) is the no-op case.
     let again = n.handle(Input::Close { error: None });
-    assert!(again.is_empty(), "close after Closed emits nothing: {again:?}");
+    assert!(
+        again.is_empty(),
+        "close after Closed emits nothing: {again:?}"
+    );
 }
 
 // ── D16: determinism ────────────────────────────────────────────────────────
@@ -1188,7 +1193,11 @@ fn d19_two_late_pushes_emit_two_diagnostics() {
         n.handle(terminal);
         let out1 = push(&mut n, b"x");
         let out2 = push(&mut n, b"y");
-        assert_eq!(count_diagnostics(&out1), 1, "first late push ⇒ 1 diagnostic");
+        assert_eq!(
+            count_diagnostics(&out1),
+            1,
+            "first late push ⇒ 1 diagnostic"
+        );
         assert_eq!(
             count_diagnostics(&out2),
             1,

@@ -97,7 +97,9 @@ impl From<&str> for StreamId {
 }
 
 /// Timer correlation token. D16: allocated by the engine, monotonic from 1.
-#[derive(Clone, Copy, PartialEq, Eq, Hash, Debug)]
+/// `PartialOrd`/`Ord` so it can key an ordered `token -> stream_id` index
+/// (56-F6) without adding a hashing dependency to this `no_std` crate.
+#[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Debug)]
 pub struct TimerToken(pub u64);
 
 /// Batch bounds for a Read. `None` on an axis = unbounded on that axis.

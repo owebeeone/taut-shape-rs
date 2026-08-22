@@ -67,6 +67,8 @@ fn node_serves_client_over_crossed_pipes_with_script_producer() {
     // Node: owns the engine + the producer script.
     let mut node = Command::new(bin)
         .arg("node")
+        .arg("--shape")
+        .arg("log")
         .arg("--stop-when")
         .arg("last_reader")
         .arg("--script")
@@ -80,6 +82,8 @@ fn node_serves_client_over_crossed_pipes_with_script_producer() {
     // Client: the cursor loop, reading stream s1 from seq 0.
     let mut client = Command::new(bin)
         .arg("client")
+        .arg("--shape")
+        .arg("log")
         .arg("--stream-id")
         .arg("s1")
         .arg("--from")
@@ -145,7 +149,9 @@ fn node_serves_client_over_crossed_pipes_with_script_producer() {
     // "aGVsbG8=") and terminate on `eof`.
     let lines: Vec<&str> = transcript.lines().collect();
     assert!(
-        lines.iter().any(|l| l.contains("aGVsbG8=") && l.contains("\"state\":\"data\"")),
+        lines
+            .iter()
+            .any(|l| l.contains("aGVsbG8=") && l.contains("\"state\":\"data\"")),
         "expected a data response carrying the pushed record; transcript:\n{transcript}"
     );
     let last = lines.last().copied().unwrap_or("");
@@ -233,7 +239,11 @@ fn client_side_script_drives_a_plain_node_to_closed() {
         "client exited {:?}; transcript:\n{transcript}",
         client_status.code()
     );
-    assert!(node_status.success(), "node exited {:?}", node_status.code());
+    assert!(
+        node_status.success(),
+        "node exited {:?}",
+        node_status.code()
+    );
 
     let lines: Vec<&str> = transcript.lines().collect();
     assert!(

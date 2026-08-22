@@ -34,9 +34,22 @@ pub(crate) struct Entry {
 
 /// The session table. Entries keyed by `stream_id`; `next_rank` is the
 /// creation-order counter feeding [`Entry::created`].
+///
+/// 56-F6: `held_order` and `timer_index` are auxiliary indices kept in
+/// lockstep with `entries[*].held` by [`Table::set_held`]/[`Table::clear_held`]
+/// (the only two ways `held` may change). They hold *only* the currently held
+/// stream ids, so a wake ([`Table::held_in_creation_order`]) traverses `H`
+/// (held reads) instead of `S` (all live streams), and a timer expiry
+/// ([`Table::find_by_timer`]) is an `O(log H)` map lookup instead of an
+/// `O(S)`/`O(S + H log H)` scan.
 pub(crate) struct Table {
     entries: BTreeMap<StreamId, Entry>,
     next_rank: u64,
+    /// Held stream ids, keyed by creation rank (D16) so iteration order is
+    /// creation order for free — no per-wake sort.
+    held_order: BTreeMap<u64, StreamId>,
+    /// `timer_token -> stream_id`, updated on park/supersede/end/expiry (D14).
+    timer_index: BTreeMap<TimerToken, StreamId>,
 }
 
 impl Table {
@@ -44,6 +57,8 @@ impl Table {
         Table {
             entries: BTreeMap::new(),
             next_rank: 0,
+            held_order: BTreeMap::new(),
+            timer_index: BTreeMap::new(),
         }
     }
 
@@ -79,9 +94,17 @@ impl Table {
     }
 
     /// Remove a stream instance (D4 `EndStream`). Returns the removed entry so
-    /// the caller can cancel its timer.
+    /// the caller can cancel its timer. Clears any auxiliary held/timer index
+    /// entries for it (56-F6).
     pub(crate) fn remove(&mut self, id: &StreamId) -> Option<Entry> {
-        self.entries.remove(id)
+        let entry = self.entries.remove(id)?;
+        if let Some(held) = &entry.held {
+            self.held_order.remove(&entry.created);
+            if let Some(tok) = held.timer {
+                self.timer_index.remove(&tok);
+            }
+        }
+        Some(entry)
     }
 
     /// The minimum watermark across all live streams (D7), or `None` when
@@ -90,17 +113,41 @@ impl Table {
         self.entries.values().map(|e| e.watermark).min()
     }
 
+    /// Park (or replace) `id`'s held read, updating the creation-order and
+    /// timer indices in lockstep (D16/D14). The caller must have already
+    /// released any prior held read via [`Self::clear_held`].
+    pub(crate) fn set_held(&mut self, id: &StreamId, held: HeldRead) {
+        let created = self.get(id).expect("entry must exist").created;
+        if let Some(tok) = held.timer {
+            self.timer_index.insert(tok, id.clone());
+        }
+        self.held_order.insert(created, id.clone());
+        self.entries.get_mut(id).unwrap().held = Some(held);
+    }
+
+    /// Release `id`'s held read, if any, clearing both auxiliary indices.
+    /// Returns the removed `HeldRead`, or `None` if it was not held.
+    pub(crate) fn clear_held(&mut self, id: &StreamId) -> Option<HeldRead> {
+        let entry = self.entries.get_mut(id)?;
+        let created = entry.created;
+        let held = entry.held.take()?;
+        self.held_order.remove(&created);
+        if let Some(tok) = held.timer {
+            self.timer_index.remove(&tok);
+        }
+        Some(held)
+    }
+
     /// All stream ids that currently hold a read, in **creation order** (D16).
     /// Used to sweep held reads when an input (`Push`/`Seal`/`Close`) may
-    /// release several of them.
+    /// release several of them. `O(H)`: `held_order` contains only held ids.
     pub(crate) fn held_in_creation_order(&self) -> alloc::vec::Vec<StreamId> {
-        let mut held: alloc::vec::Vec<(u64, StreamId)> = self
-            .entries
-            .iter()
-            .filter(|(_, e)| e.held.is_some())
-            .map(|(id, e)| (e.created, id.clone()))
-            .collect();
-        held.sort_by_key(|(rank, _)| *rank);
-        held.into_iter().map(|(_, id)| id).collect()
+        self.held_order.values().cloned().collect()
+    }
+
+    /// The stream id whose held read is waiting on `token`, if any (D14).
+    /// `O(log H)` via the timer index, instead of scanning held reads.
+    pub(crate) fn find_by_timer(&self, token: TimerToken) -> Option<StreamId> {
+        self.timer_index.get(&token).cloned()
     }
 }

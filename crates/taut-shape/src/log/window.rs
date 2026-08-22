@@ -98,14 +98,26 @@ impl Window {
     /// Assumes the caller has already classified `from` as valid-for-data
     /// (`from < head`, not below floor). Returns an empty vec + `from` if there
     /// is nothing strictly after `from`.
+    ///
+    /// 56-F5: `records` is dense (`records[i].seq == front.seq + i`, since
+    /// `push` only appends the next seq and `evict` only drops a front prefix),
+    /// so the first candidate index is computed directly from the front
+    /// record's seq instead of scanning from the front and skipping already-
+    /// consumed records. A read is `O(K)` for `K` returned records rather than
+    /// `O(N)` in the retained window size.
     pub(crate) fn scan(&self, from: u64, limits: Limits) -> (Vec<Record>, u64) {
         let mut out = Vec::new();
         let mut last = from;
         let mut bytes: u64 = 0;
-        for rec in self.records.iter() {
-            if rec.seq <= from {
-                continue;
-            }
+        let n = self.records.len();
+        let start = match self.records.front() {
+            Some(front) if from >= front.seq => (from - front.seq + 1) as usize,
+            Some(_) => 0,
+            None => return (out, last),
+        };
+        for i in start..n {
+            let rec = &self.records[i];
+            debug_assert!(rec.seq > from, "dense-sequence invariant violated");
             // max_records bound.
             if let Some(maxr) = limits.max_records {
                 if out.len() as u64 >= maxr as u64 {

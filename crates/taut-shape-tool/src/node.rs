@@ -26,6 +26,10 @@ use taut_shape::{
 
 use crate::framing::{self, Frame};
 use crate::jsoncodec;
+use crate::runtime::{
+    require_engine_shape, AdapterCode, AdapterDiagnostic, EngineAdapter, EngineEffect,
+    EngineEmission, EngineRuntime, TeardownAction, TimerAction,
+};
 use crate::script::{Pending, Script};
 
 /// `node`-mode construction knobs collected from the CLI.
@@ -33,7 +37,84 @@ pub struct Opts {
     pub stop_when: StopWhen,
     /// Optional `--script`: a producer-injection script fired against the local
     /// engine after the k-th client frame is processed (interop driver, §7).
-    pub script: Option<Script>,
+    pub script: Option<Script<Input>>,
+}
+
+struct LogAdapter {
+    node: LogNode,
+    stream_log_ids: HashMap<String, String>,
+}
+
+impl LogAdapter {
+    fn new(stop_when: StopWhen) -> Self {
+        require_engine_shape("log").expect("the built-in log adapter must be registered");
+        Self {
+            node: LogNode::new(Config { stop_when }),
+            stream_log_ids: HashMap::new(),
+        }
+    }
+
+    fn injected_log_id(&self, out: &Output) -> String {
+        match out {
+            Output::Response(resp) => self
+                .stream_log_ids
+                .get(resp.stream_id.0.as_ref())
+                .cloned()
+                .unwrap_or_default(),
+            _ => String::new(),
+        }
+    }
+}
+
+impl EngineAdapter for LogAdapter {
+    type FrameIn = Frame;
+    type Input = Input;
+    type Output = Output;
+    type FrameOut = (u8, Cbor);
+
+    fn shape(&self) -> &'static str {
+        "log"
+    }
+
+    fn decode_input(&mut self, frame: Frame) -> Result<Input, AdapterDiagnostic> {
+        if let Some(echo) = read_echo(&frame) {
+            self.stream_log_ids.insert(echo.stream_id, echo.log_id);
+        }
+        decode_input(&frame)
+    }
+
+    fn dispatch(&mut self, input: Input) -> Vec<Output> {
+        self.node.handle(input)
+    }
+
+    fn encode_output(&self, output: &Output) -> EngineEffect<(u8, Cbor)> {
+        let timer = match output {
+            Output::SetTimer { token, ms } => Some(TimerAction::Set {
+                token: token.0 as i64,
+                delay_ms: *ms as i64,
+            }),
+            Output::CancelTimer { token } => Some(TimerAction::Cancel {
+                token: token.0 as i64,
+            }),
+            _ => None,
+        };
+        let teardown = match output {
+            Output::ProducerStop { reason } => Some(TeardownAction {
+                reason: format!("{reason:?}"),
+            }),
+            _ => None,
+        };
+        let (tag, body) = encode_output(output, &self.stream_log_ids);
+        EngineEffect {
+            frame: (tag.wire() as u8, body),
+            timer,
+            teardown,
+        }
+    }
+
+    fn finish(&mut self) -> Vec<Output> {
+        Vec::new()
+    }
 }
 
 /// Run the node pump against real stdin/stdout. Returns the process exit code
@@ -69,19 +150,7 @@ pub fn pump<R: Read, W: Write, T: Write>(
     transcript: &mut T,
     opts: Opts,
 ) -> io::Result<u8> {
-    let mut node = LogNode::new(Config {
-        stop_when: opts.stop_when,
-    });
-    // `log_id` is a service-level routing handle the node engine never sees
-    // (D3): the engine's `Response` carries only `stream_id`. To echo a
-    // consistent `log_id` back on every response addressed to a stream — the
-    // direct `Read` answer *and* a later held-release triggered by
-    // Push/Seal/Close/TimerExpired — we remember, per `stream_id`, the `log_id`
-    // the stream was created with. Without this, a released read would echo an
-    // empty `log_id` (no `Read` frame in scope), diverging from the same
-    // stream's direct-read answer and freezing that inconsistency into the
-    // oracle. A natural cross-language shell keeps this per-stream mapping too.
-    let mut stream_log_ids: HashMap<String, String> = HashMap::new();
+    let mut runtime = EngineRuntime::new(LogAdapter::new(opts.stop_when));
 
     let mut pending = opts.script.map(Pending::new);
     // Count of client (stdin) frames processed so far; drives `after_frames`.
@@ -90,7 +159,7 @@ pub fn pump<R: Read, W: Write, T: Write>(
     // `after_frames: 0` fires *before* any client frame (Oracle §7).
     if let Some(p) = &mut pending {
         let due = p.take_due(0);
-        inject(&mut node, output, transcript, &stream_log_ids, due)?;
+        inject(&mut runtime, output, transcript, due)?;
         output.flush()?;
     }
 
@@ -102,40 +171,32 @@ pub fn pump<R: Read, W: Write, T: Write>(
                 // a trailing seal/close is not silently dropped), then exit 0.
                 if let Some(p) = &mut pending {
                     let rest = p.drain_remaining();
-                    inject(&mut node, output, transcript, &stream_log_ids, rest)?;
+                    inject(&mut runtime, output, transcript, rest)?;
                 }
+                write_emissions(output, runtime.finish())?;
                 output.flush()?;
                 return Ok(0);
             }
             Ok(Some(frame)) => {
-                let engine_input = match decode_input(&frame) {
-                    Ok(i) => i,
-                    Err(msg) => {
-                        eprintln!("taut-shape-tool node: {msg}");
+                let emissions = match runtime.process(frame) {
+                    Ok(emissions) => emissions,
+                    Err(diagnostic) => {
+                        eprintln!("taut-shape-tool node: {diagnostic}");
                         output.flush()?;
                         return Ok(3);
                     }
                 };
-                // Remember this stream's `log_id` (a `Read` frame carries it),
-                // so every response addressed to the stream — direct or a later
-                // held-release — echoes the same handle.
-                if let Some(echo) = read_echo(&frame) {
-                    stream_log_ids.insert(echo.stream_id, echo.log_id);
-                }
-                for out in node.handle(engine_input) {
-                    let (tag, body) = encode_output(&out, &stream_log_ids);
-                    framing::write_frame(output, tag, &body)?;
-                }
+                write_emissions(output, emissions)?;
                 // One client frame processed: fire any injections now due.
                 frames += 1;
                 if let Some(p) = &mut pending {
                     let due = p.take_due(frames);
-                    inject(&mut node, output, transcript, &stream_log_ids, due)?;
+                    inject(&mut runtime, output, transcript, due)?;
                 }
                 output.flush()?;
             }
             Err(fe) => {
-                eprintln!("taut-shape-tool node: {fe}");
+                eprintln!("taut-shape-tool node: {}: {fe}", fe.code());
                 output.flush()?;
                 return Ok(3);
             }
@@ -148,35 +209,48 @@ pub fn pump<R: Read, W: Write, T: Write>(
 /// is read-only here: producer inputs create no new streams, so a released
 /// read's `log_id` was already recorded by the `Read` that parked it.
 fn inject<W: Write, T: Write>(
-    node: &mut LogNode,
+    runtime: &mut EngineRuntime<LogAdapter>,
     output: &mut W,
     transcript: &mut T,
-    stream_log_ids: &HashMap<String, String>,
     inputs: Vec<Input>,
 ) -> io::Result<()> {
     for input in inputs {
-        for out in node.handle(input) {
+        for emission in runtime.dispatch(input) {
             // Best-effort control-channel echo; the data channel is the pin.
-            let log_id = injected_log_id(&out, stream_log_ids);
-            let _ = writeln!(transcript, "{}", jsoncodec::output_to_json(&out, &log_id));
-            let (tag, body) = encode_output(&out, stream_log_ids);
+            let log_id = runtime.adapter().injected_log_id(&emission.output);
+            let _ = writeln!(
+                transcript,
+                "{}",
+                jsoncodec::output_to_json(&emission.output, &log_id)
+            );
+            // The conformance CLI preserves these as wire frames; an embedded
+            // host may route the same shape-neutral annotations to its runtime.
+            let _runtime_actions = (&emission.effect.timer, &emission.effect.teardown);
+            let EngineEffect {
+                frame: (tag, body),
+                timer: _,
+                teardown: _,
+            } = emission.effect;
             framing::write_frame(output, tag, &body)?;
         }
     }
     Ok(())
 }
 
-/// The `log_id` to stamp on a transcript line for an injected output — a
-/// released `Response` looks its stream up in the per-stream map; non-response
-/// outputs carry no stream, so the id is irrelevant (empty).
-fn injected_log_id(out: &Output, stream_log_ids: &HashMap<String, String>) -> String {
-    match out {
-        Output::Response(resp) => stream_log_ids
-            .get(resp.stream_id.0.as_ref())
-            .cloned()
-            .unwrap_or_default(),
-        _ => String::new(),
+fn write_emissions<W: Write>(
+    output: &mut W,
+    emissions: Vec<EngineEmission<Output, (u8, Cbor)>>,
+) -> io::Result<()> {
+    for emission in emissions {
+        let _runtime_actions = (&emission.effect.timer, &emission.effect.teardown);
+        let EngineEffect {
+            frame: (tag, body),
+            timer: _,
+            teardown: _,
+        } = emission.effect;
+        framing::write_frame(output, tag, &body)?;
     }
+    Ok(())
 }
 
 /// The `log_id`/`stream_id` pair to echo back onto a `read_response` — only a
@@ -187,7 +261,7 @@ struct ReadEcho {
 }
 
 fn read_echo(frame: &Frame) -> Option<ReadEcho> {
-    if !matches!(frame.tag, LogMsgType::Read) {
+    if LogMsgType::from_wire(frame.tag as i64).ok()? != LogMsgType::Read {
         return None;
     }
     // Fail-closed decode: a malformed body yields None (no echo) rather than a
@@ -202,11 +276,24 @@ fn read_echo(frame: &Frame) -> Option<ReadEcho> {
 /// Decode an input frame into the engine's [`Input`]. Returns a human string on
 /// a frame whose tag is an *output* kind (or otherwise not a valid input) —
 /// mapped by the caller to exit 3.
-fn decode_input(frame: &Frame) -> Result<Input, String> {
+fn decode_input(frame: &Frame) -> Result<Input, AdapterDiagnostic> {
+    let tag = LogMsgType::from_wire(frame.tag as i64).map_err(|_| {
+        AdapterDiagnostic::new(
+            AdapterCode::UnknownTag,
+            "log",
+            format!("unknown frame tag byte {}", frame.tag),
+        )
+    })?;
     // Fail-closed: a body that does not decode to the expected shape is mapped
     // to the `Err(String)` the caller turns into exit 3 — never a panic.
-    let bad = |e: taut_shape::cbor::DecodeError| format!("malformed {:?} body: {e}", frame.tag);
-    Ok(match frame.tag {
+    let bad = |e: taut_shape::cbor::DecodeError| {
+        AdapterDiagnostic::new(
+            AdapterCode::MalformedMessage,
+            "log",
+            format!("malformed {tag:?} body: {e}"),
+        )
+    };
+    Ok(match tag {
         LogMsgType::Push => {
             let m = LogPush::from_cbor(&frame.body).map_err(bad)?;
             Input::Push { payload: m.payload }
@@ -256,9 +343,10 @@ fn decode_input(frame: &Frame) -> Result<Input, String> {
         | LogMsgType::CancelTimer
         | LogMsgType::ProducerStop
         | LogMsgType::Diagnostic => {
-            return Err(format!(
-                "output-only tag {} on the input channel",
-                frame.tag.wire()
+            return Err(AdapterDiagnostic::new(
+                AdapterCode::DirectionViolation,
+                "log",
+                format!("output-only tag {} on the input channel", tag.wire()),
             ))
         }
     })
@@ -279,7 +367,10 @@ pub fn encode_input(input: &Input) -> (LogMsgType, Cbor) {
             }
             .to_cbor(),
         ),
-        Input::Seal => (LogMsgType::Seal, taut_shape::generated::LogSeal {}.to_cbor()),
+        Input::Seal => (
+            LogMsgType::Seal,
+            taut_shape::generated::LogSeal {}.to_cbor(),
+        ),
         Input::Close { error } => (
             LogMsgType::Close,
             LogClose {
@@ -446,5 +537,34 @@ fn from_wire_error(e: taut_shape::generated::LogError) -> taut_shape::Error {
             W::Internal => C::Internal,
         },
         message: e.message,
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn log_adapter_exposes_timer_and_teardown_effects() {
+        let mut runtime = EngineRuntime::new(LogAdapter::new(StopWhen::LastReader));
+        let held = runtime.dispatch(Input::Read {
+            stream_id: "s1".into(),
+            cursor: Some(Cursor::new(0)),
+            limits: Limits::default(),
+            timeout_ms: Some(25),
+        });
+        assert_eq!(
+            held[0].effect.timer,
+            Some(TimerAction::Set {
+                token: 1,
+                delay_ms: 25,
+            })
+        );
+        assert_eq!(held[0].effect.frame.0, LogMsgType::SetTimer.wire() as u8);
+
+        let closed = runtime.dispatch(Input::Close { error: None });
+        assert!(closed
+            .iter()
+            .any(|emission| emission.effect.teardown.is_some()));
     }
 }
