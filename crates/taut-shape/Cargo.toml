@@ -8,7 +8,7 @@
 [package]
 name = "taut-shape"
 description = "Reference Rust implementation of the Taut `log` delivery-shape mailbox engine."
-version = "0.0.0"
+version = "0.9.0"
 edition = "2021"
 license = "MIT OR Apache-2.0"
 repository = "https://github.com/owebeeone/taut-shape-rs"
