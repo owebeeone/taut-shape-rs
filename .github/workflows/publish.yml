@@ -45,11 +45,11 @@ jobs:
       - uses: actions/checkout@v6
       - name: Require tag/crate version agreement
         run: |
-          version=$(sed -n '/^\[workspace\.package\]/,/^\[/s/^version = "\([^"]*\)"/\1/p' Cargo.toml)
+          version=$(sed -n '/^\[package\]/,/^\[/s/^version = "\([^"]*\)"/\1/p' crates/taut-shape/Cargo.toml)
           test "$version" = "${RELEASE_TAG#v}"
       - name: Publish if this immutable version is absent
         run: |
-          version=$(sed -n '/^\[workspace\.package\]/,/^\[/s/^version = "\([^"]*\)"/\1/p' Cargo.toml)
+          version=$(sed -n '/^\[package\]/,/^\[/s/^version = "\([^"]*\)"/\1/p' crates/taut-shape/Cargo.toml)
           if curl --fail --silent --show-error \
             --header 'User-Agent: taut-shape-release-workflow' \
             "https://crates.io/api/v1/crates/taut-shape/$version" >/dev/null; then
