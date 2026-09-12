@@ -8,10 +8,12 @@
 [package]
 name = "taut-shape"
 description = "Reference Rust implementation of the Taut `log` delivery-shape mailbox engine."
-version = "0.9.1"
+version = "0.9.2"
 edition = "2021"
 license = "MIT OR Apache-2.0"
 repository = "https://github.com/owebeeone/taut-shape-rs"
+# The repository README is the crate README; cargo copies it into the package.
+readme = "../../README.md"
 rust-version = "1.75"
 
 # Inlined from [workspace.lints.rust] — the core crate must stay no_std-clean;
