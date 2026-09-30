@@ -1,0 +1,41 @@
+# taut-shape-rs's releases (RELEASE.md). gearu verifies the tree, raises the versions, commits and
+# tags it, and pushes both, and the GitHub Release it creates starts
+# .github/workflows/publish.yml, which publishes the taut-shape crate to crates.io.
+[project]
+name = "taut-shape-rs"
+branch = "main"
+remote = "origin"
+tag_prefix = "v"
+github_repo = "owebeeone/taut-shape-rs"
+
+[rust]
+manifests = [
+    { path = "Cargo.toml", key = "workspace.package.version" },
+    { path = "crates/taut-shape/Cargo.toml", key = "package.version" },
+    { path = "crates/taut-shape-tool/Cargo.toml", key = "package.version" },
+]
+lockfile = "Cargo.lock"
+# The workspace's own packages only: a release never moves a dependency.
+lock_command = ["cargo", "update", "--workspace"]
+
+[release]
+# The checks CI runs before it publishes. They build in this checkout's target directory, which
+# git ignores, so a release reuses its compiled dependencies. `checks` run before gearu commits
+# the version, so packaging allows the uncommitted change; `exact_checks` package the commit.
+checks = [
+    # The package reads the contract's corpus from a sibling taut-shape checkout, as CI does, which
+    # checks the contract's main out beside it: link gearu's candidate to this checkout's sibling.
+    ["ln", "-sfn", "{repo}/../taut-shape", "../taut-shape"],
+    ["env", "CARGO_TARGET_DIR={repo}/target", "cargo", "test", "--workspace", "--locked"],
+    ["env", "CARGO_TARGET_DIR={repo}/target", "cargo", "clippy", "--workspace", "--all-targets",
+     "--locked", "--", "-D", "warnings"],
+    ["env", "CARGO_TARGET_DIR={repo}/target", "cargo", "build", "-p", "taut-shape",
+     "--no-default-features", "--locked"],
+    ["env", "CARGO_TARGET_DIR={repo}/target", "cargo", "package", "-p", "taut-shape", "--locked",
+     "--allow-dirty"],
+]
+exact_checks = [
+    ["env", "CARGO_TARGET_DIR={repo}/target", "cargo", "package", "-p", "taut-shape", "--locked"],
+]
+commit_message = "Release taut-shape-rs {version}"
+github_notes = "Taut shape package for Rust, {tag}. Publishing this release triggers the crates.io workflow."
