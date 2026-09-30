@@ -22,7 +22,7 @@
 //
 // Source schema : taut-shape/ir/shape_log.taut.py
 //                 (exported IR: taut-shape/ir/shape_log.ir.json)
-// Generator     : taut  @ 70e17b7 + fail-closed codegen (opt-in --fail-closed)
+// Generator     : taut v0.10.0 (fail-closed decode, taut's only Rust codec)
 // Schema repo   : taut-shape @ 7aa206b + diagnostics (D18/D19: LogSeverity,
 //                 LogDiagCode, LogDiagnostic, LogMsgType.diagnostic=11; uncommitted)
 //
@@ -40,6 +40,11 @@
 use alloc::{string::String, vec, vec::Vec};
 
 use crate::cbor::{Cbor, DecodeError};
+
+// The file's bounds, for a decode rooted at a type that is not a message:
+// `cbor::try_decode_with(bytes, MAX_DEPTH, MAX_ENCODED_LEN)`.
+pub const MAX_DEPTH: usize = 32;
+pub const MAX_ENCODED_LEN: Option<usize> = None;
 
 #[derive(Clone, Copy, Debug, PartialEq, Default)]
 pub enum LogMsgType {
@@ -193,6 +198,8 @@ pub struct LogCursor {
     pub seq: i64,
 }
 impl LogCursor {
+    pub const MAX_DEPTH: usize = 32;
+    pub const MAX_ENCODED_LEN: Option<usize> = None;
     pub fn to_cbor(&self) -> Cbor {
         Cbor::Map(vec![
             (1, Cbor::Int(self.seq)),
@@ -203,6 +210,9 @@ impl LogCursor {
             seq: c.try_get(1)?.try_int()?,
         })
     }
+    pub fn decode(bytes: &[u8]) -> Result<Self, DecodeError> {
+        Self::from_cbor(&crate::cbor::try_decode_with(bytes, Self::MAX_DEPTH, Self::MAX_ENCODED_LEN)?)
+    }
 }
 
 #[derive(Clone, Debug, PartialEq, Default)]
@@ -211,6 +221,8 @@ pub struct LogRecord {
     pub payload: Vec<u8>,
 }
 impl LogRecord {
+    pub const MAX_DEPTH: usize = 32;
+    pub const MAX_ENCODED_LEN: Option<usize> = None;
     pub fn to_cbor(&self) -> Cbor {
         Cbor::Map(vec![
             (1, Cbor::Int(self.seq)),
@@ -223,6 +235,9 @@ impl LogRecord {
             payload: c.try_get(2)?.try_bytes()?,
         })
     }
+    pub fn decode(bytes: &[u8]) -> Result<Self, DecodeError> {
+        Self::from_cbor(&crate::cbor::try_decode_with(bytes, Self::MAX_DEPTH, Self::MAX_ENCODED_LEN)?)
+    }
 }
 
 #[derive(Clone, Debug, PartialEq, Default)]
@@ -231,6 +246,8 @@ pub struct LogError {
     pub message: Option<String>,
 }
 impl LogError {
+    pub const MAX_DEPTH: usize = 32;
+    pub const MAX_ENCODED_LEN: Option<usize> = None;
     pub fn to_cbor(&self) -> Cbor {
         Cbor::Map(vec![
             (1, Cbor::Int(self.code.wire())),
@@ -243,6 +260,9 @@ impl LogError {
             message: { let v = c.try_get(2)?; if v.is_null() { None } else { Some(v.try_text()?) } },
         })
     }
+    pub fn decode(bytes: &[u8]) -> Result<Self, DecodeError> {
+        Self::from_cbor(&crate::cbor::try_decode_with(bytes, Self::MAX_DEPTH, Self::MAX_ENCODED_LEN)?)
+    }
 }
 
 #[derive(Clone, Debug, PartialEq, Default)]
@@ -250,6 +270,8 @@ pub struct LogPush {
     pub payload: Vec<u8>,
 }
 impl LogPush {
+    pub const MAX_DEPTH: usize = 32;
+    pub const MAX_ENCODED_LEN: Option<usize> = None;
     pub fn to_cbor(&self) -> Cbor {
         Cbor::Map(vec![
             (1, Cbor::Bytes(self.payload.clone())),
@@ -260,19 +282,28 @@ impl LogPush {
             payload: c.try_get(1)?.try_bytes()?,
         })
     }
+    pub fn decode(bytes: &[u8]) -> Result<Self, DecodeError> {
+        Self::from_cbor(&crate::cbor::try_decode_with(bytes, Self::MAX_DEPTH, Self::MAX_ENCODED_LEN)?)
+    }
 }
 
 #[derive(Clone, Debug, PartialEq, Default)]
 pub struct LogSeal {
 }
 impl LogSeal {
+    pub const MAX_DEPTH: usize = 32;
+    pub const MAX_ENCODED_LEN: Option<usize> = None;
     pub fn to_cbor(&self) -> Cbor {
         Cbor::Map(vec![
         ])
     }
     pub fn from_cbor(c: &Cbor) -> Result<Self, DecodeError> {
+        if !c.is_map() { return Err(DecodeError::WrongType { expected: "map" }); }
         Ok(Self {
         })
+    }
+    pub fn decode(bytes: &[u8]) -> Result<Self, DecodeError> {
+        Self::from_cbor(&crate::cbor::try_decode_with(bytes, Self::MAX_DEPTH, Self::MAX_ENCODED_LEN)?)
     }
 }
 
@@ -281,6 +312,8 @@ pub struct LogClose {
     pub error: Option<LogError>,
 }
 impl LogClose {
+    pub const MAX_DEPTH: usize = 32;
+    pub const MAX_ENCODED_LEN: Option<usize> = None;
     pub fn to_cbor(&self) -> Cbor {
         Cbor::Map(vec![
             (1, match &self.error { Some(v) => v.to_cbor(), None => Cbor::Null }),
@@ -290,6 +323,9 @@ impl LogClose {
         Ok(Self {
             error: { let v = c.try_get(1)?; if v.is_null() { None } else { Some(LogError::from_cbor(v)?) } },
         })
+    }
+    pub fn decode(bytes: &[u8]) -> Result<Self, DecodeError> {
+        Self::from_cbor(&crate::cbor::try_decode_with(bytes, Self::MAX_DEPTH, Self::MAX_ENCODED_LEN)?)
     }
 }
 
@@ -303,6 +339,8 @@ pub struct LogReadRequest {
     pub timeout_ms: Option<i64>,
 }
 impl LogReadRequest {
+    pub const MAX_DEPTH: usize = 32;
+    pub const MAX_ENCODED_LEN: Option<usize> = None;
     pub fn to_cbor(&self) -> Cbor {
         Cbor::Map(vec![
             (1, Cbor::Text(self.log_id.clone())),
@@ -323,6 +361,9 @@ impl LogReadRequest {
             timeout_ms: { let v = c.try_get(6)?; if v.is_null() { None } else { Some(v.try_int()?) } },
         })
     }
+    pub fn decode(bytes: &[u8]) -> Result<Self, DecodeError> {
+        Self::from_cbor(&crate::cbor::try_decode_with(bytes, Self::MAX_DEPTH, Self::MAX_ENCODED_LEN)?)
+    }
 }
 
 #[derive(Clone, Debug, PartialEq, Default)]
@@ -331,6 +372,8 @@ pub struct LogEndStream {
     pub stream_id: String,
 }
 impl LogEndStream {
+    pub const MAX_DEPTH: usize = 32;
+    pub const MAX_ENCODED_LEN: Option<usize> = None;
     pub fn to_cbor(&self) -> Cbor {
         Cbor::Map(vec![
             (1, Cbor::Text(self.log_id.clone())),
@@ -343,6 +386,9 @@ impl LogEndStream {
             stream_id: c.try_get(2)?.try_text()?,
         })
     }
+    pub fn decode(bytes: &[u8]) -> Result<Self, DecodeError> {
+        Self::from_cbor(&crate::cbor::try_decode_with(bytes, Self::MAX_DEPTH, Self::MAX_ENCODED_LEN)?)
+    }
 }
 
 #[derive(Clone, Debug, PartialEq, Default)]
@@ -350,6 +396,8 @@ pub struct LogTimerExpired {
     pub token: i64,
 }
 impl LogTimerExpired {
+    pub const MAX_DEPTH: usize = 32;
+    pub const MAX_ENCODED_LEN: Option<usize> = None;
     pub fn to_cbor(&self) -> Cbor {
         Cbor::Map(vec![
             (1, Cbor::Int(self.token)),
@@ -360,6 +408,9 @@ impl LogTimerExpired {
             token: c.try_get(1)?.try_int()?,
         })
     }
+    pub fn decode(bytes: &[u8]) -> Result<Self, DecodeError> {
+        Self::from_cbor(&crate::cbor::try_decode_with(bytes, Self::MAX_DEPTH, Self::MAX_ENCODED_LEN)?)
+    }
 }
 
 #[derive(Clone, Debug, PartialEq, Default)]
@@ -367,6 +418,8 @@ pub struct LogEvict {
     pub up_to_seq: i64,
 }
 impl LogEvict {
+    pub const MAX_DEPTH: usize = 32;
+    pub const MAX_ENCODED_LEN: Option<usize> = None;
     pub fn to_cbor(&self) -> Cbor {
         Cbor::Map(vec![
             (1, Cbor::Int(self.up_to_seq)),
@@ -376,6 +429,9 @@ impl LogEvict {
         Ok(Self {
             up_to_seq: c.try_get(1)?.try_int()?,
         })
+    }
+    pub fn decode(bytes: &[u8]) -> Result<Self, DecodeError> {
+        Self::from_cbor(&crate::cbor::try_decode_with(bytes, Self::MAX_DEPTH, Self::MAX_ENCODED_LEN)?)
     }
 }
 
@@ -389,6 +445,8 @@ pub struct LogReadResponse {
     pub error: Option<LogError>,
 }
 impl LogReadResponse {
+    pub const MAX_DEPTH: usize = 32;
+    pub const MAX_ENCODED_LEN: Option<usize> = None;
     pub fn to_cbor(&self) -> Cbor {
         Cbor::Map(vec![
             (1, Cbor::Text(self.log_id.clone())),
@@ -409,6 +467,9 @@ impl LogReadResponse {
             error: { let v = c.try_get(6)?; if v.is_null() { None } else { Some(LogError::from_cbor(v)?) } },
         })
     }
+    pub fn decode(bytes: &[u8]) -> Result<Self, DecodeError> {
+        Self::from_cbor(&crate::cbor::try_decode_with(bytes, Self::MAX_DEPTH, Self::MAX_ENCODED_LEN)?)
+    }
 }
 
 #[derive(Clone, Debug, PartialEq, Default)]
@@ -417,6 +478,8 @@ pub struct LogSetTimer {
     pub ms: i64,
 }
 impl LogSetTimer {
+    pub const MAX_DEPTH: usize = 32;
+    pub const MAX_ENCODED_LEN: Option<usize> = None;
     pub fn to_cbor(&self) -> Cbor {
         Cbor::Map(vec![
             (1, Cbor::Int(self.token)),
@@ -429,6 +492,9 @@ impl LogSetTimer {
             ms: c.try_get(2)?.try_int()?,
         })
     }
+    pub fn decode(bytes: &[u8]) -> Result<Self, DecodeError> {
+        Self::from_cbor(&crate::cbor::try_decode_with(bytes, Self::MAX_DEPTH, Self::MAX_ENCODED_LEN)?)
+    }
 }
 
 #[derive(Clone, Debug, PartialEq, Default)]
@@ -436,6 +502,8 @@ pub struct LogCancelTimer {
     pub token: i64,
 }
 impl LogCancelTimer {
+    pub const MAX_DEPTH: usize = 32;
+    pub const MAX_ENCODED_LEN: Option<usize> = None;
     pub fn to_cbor(&self) -> Cbor {
         Cbor::Map(vec![
             (1, Cbor::Int(self.token)),
@@ -446,6 +514,9 @@ impl LogCancelTimer {
             token: c.try_get(1)?.try_int()?,
         })
     }
+    pub fn decode(bytes: &[u8]) -> Result<Self, DecodeError> {
+        Self::from_cbor(&crate::cbor::try_decode_with(bytes, Self::MAX_DEPTH, Self::MAX_ENCODED_LEN)?)
+    }
 }
 
 #[derive(Clone, Debug, PartialEq, Default)]
@@ -453,6 +524,8 @@ pub struct LogProducerStop {
     pub reason: LogStopReason,
 }
 impl LogProducerStop {
+    pub const MAX_DEPTH: usize = 32;
+    pub const MAX_ENCODED_LEN: Option<usize> = None;
     pub fn to_cbor(&self) -> Cbor {
         Cbor::Map(vec![
             (1, Cbor::Int(self.reason.wire())),
@@ -463,6 +536,9 @@ impl LogProducerStop {
             reason: LogStopReason::from_wire(c.try_get(1)?.try_int()?)?,
         })
     }
+    pub fn decode(bytes: &[u8]) -> Result<Self, DecodeError> {
+        Self::from_cbor(&crate::cbor::try_decode_with(bytes, Self::MAX_DEPTH, Self::MAX_ENCODED_LEN)?)
+    }
 }
 
 #[derive(Clone, Debug, PartialEq, Default)]
@@ -471,6 +547,8 @@ pub struct LogDiagnostic {
     pub code: LogDiagCode,
 }
 impl LogDiagnostic {
+    pub const MAX_DEPTH: usize = 32;
+    pub const MAX_ENCODED_LEN: Option<usize> = None;
     pub fn to_cbor(&self) -> Cbor {
         Cbor::Map(vec![
             (1, Cbor::Int(self.severity.wire())),
@@ -482,5 +560,8 @@ impl LogDiagnostic {
             severity: LogSeverity::from_wire(c.try_get(1)?.try_int()?)?,
             code: LogDiagCode::from_wire(c.try_get(2)?.try_int()?)?,
         })
+    }
+    pub fn decode(bytes: &[u8]) -> Result<Self, DecodeError> {
+        Self::from_cbor(&crate::cbor::try_decode_with(bytes, Self::MAX_DEPTH, Self::MAX_ENCODED_LEN)?)
     }
 }

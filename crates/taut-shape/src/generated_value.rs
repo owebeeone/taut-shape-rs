@@ -8,6 +8,11 @@
 use alloc::{string::String, vec, vec::Vec};
 use crate::cbor::{Cbor, DecodeError};
 
+// The file's bounds, for a decode rooted at a type that is not a message:
+// `cbor::try_decode_with(bytes, MAX_DEPTH, MAX_ENCODED_LEN)`.
+pub const MAX_DEPTH: usize = 32;
+pub const MAX_ENCODED_LEN: Option<usize> = None;
+
 #[derive(Clone, Copy, Debug, PartialEq, Default)]
 pub enum ValueMsgType {
     #[default] Set,
@@ -86,6 +91,8 @@ pub struct ValueStamp {
     pub lamport: i64,
 }
 impl ValueStamp {
+    pub const MAX_DEPTH: usize = 32;
+    pub const MAX_ENCODED_LEN: Option<usize> = None;
     pub fn to_cbor(&self) -> Cbor {
         Cbor::Map(vec![
             (1, Cbor::Text(self.origin.clone())),
@@ -100,6 +107,9 @@ impl ValueStamp {
             lamport: c.try_get(3)?.try_int()?,
         })
     }
+    pub fn decode(bytes: &[u8]) -> Result<Self, DecodeError> {
+        Self::from_cbor(&crate::cbor::try_decode_with(bytes, Self::MAX_DEPTH, Self::MAX_ENCODED_LEN)?)
+    }
 }
 
 #[derive(Clone, Debug, PartialEq, Default)]
@@ -111,6 +121,8 @@ pub struct ValueSet {
     pub payload: Vec<u8>,
 }
 impl ValueSet {
+    pub const MAX_DEPTH: usize = 32;
+    pub const MAX_ENCODED_LEN: Option<usize> = None;
     pub fn to_cbor(&self) -> Cbor {
         Cbor::Map(vec![
             (1, Cbor::Text(self.origin.clone())),
@@ -129,6 +141,9 @@ impl ValueSet {
             payload: c.try_get(5)?.try_bytes()?,
         })
     }
+    pub fn decode(bytes: &[u8]) -> Result<Self, DecodeError> {
+        Self::from_cbor(&crate::cbor::try_decode_with(bytes, Self::MAX_DEPTH, Self::MAX_ENCODED_LEN)?)
+    }
 }
 
 #[derive(Clone, Debug, PartialEq, Default)]
@@ -137,6 +152,8 @@ pub struct ValueReadRequest {
     pub stream_id: String,
 }
 impl ValueReadRequest {
+    pub const MAX_DEPTH: usize = 32;
+    pub const MAX_ENCODED_LEN: Option<usize> = None;
     pub fn to_cbor(&self) -> Cbor {
         Cbor::Map(vec![
             (1, Cbor::Text(self.value_id.clone())),
@@ -149,6 +166,9 @@ impl ValueReadRequest {
             stream_id: c.try_get(2)?.try_text()?,
         })
     }
+    pub fn decode(bytes: &[u8]) -> Result<Self, DecodeError> {
+        Self::from_cbor(&crate::cbor::try_decode_with(bytes, Self::MAX_DEPTH, Self::MAX_ENCODED_LEN)?)
+    }
 }
 
 #[derive(Clone, Debug, PartialEq, Default)]
@@ -160,6 +180,8 @@ pub struct ValueReadResponse {
     pub state: ValueState,
 }
 impl ValueReadResponse {
+    pub const MAX_DEPTH: usize = 32;
+    pub const MAX_ENCODED_LEN: Option<usize> = None;
     pub fn to_cbor(&self) -> Cbor {
         Cbor::Map(vec![
             (1, Cbor::Text(self.value_id.clone())),
@@ -178,6 +200,9 @@ impl ValueReadResponse {
             state: ValueState::from_wire(c.try_get(5)?.try_int()?)?,
         })
     }
+    pub fn decode(bytes: &[u8]) -> Result<Self, DecodeError> {
+        Self::from_cbor(&crate::cbor::try_decode_with(bytes, Self::MAX_DEPTH, Self::MAX_ENCODED_LEN)?)
+    }
 }
 
 #[derive(Clone, Debug, PartialEq, Default)]
@@ -186,6 +211,8 @@ pub struct ValueDiagnostic {
     pub code: ValueDiagCode,
 }
 impl ValueDiagnostic {
+    pub const MAX_DEPTH: usize = 32;
+    pub const MAX_ENCODED_LEN: Option<usize> = None;
     pub fn to_cbor(&self) -> Cbor {
         Cbor::Map(vec![
             (1, Cbor::Int(self.severity.wire())),
@@ -197,5 +224,8 @@ impl ValueDiagnostic {
             severity: ValueSeverity::from_wire(c.try_get(1)?.try_int()?)?,
             code: ValueDiagCode::from_wire(c.try_get(2)?.try_int()?)?,
         })
+    }
+    pub fn decode(bytes: &[u8]) -> Result<Self, DecodeError> {
+        Self::from_cbor(&crate::cbor::try_decode_with(bytes, Self::MAX_DEPTH, Self::MAX_ENCODED_LEN)?)
     }
 }

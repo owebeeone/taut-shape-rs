@@ -35,7 +35,7 @@ fn parse_frame(buf: &[u8]) -> (LogMsgType, Cbor, &[u8]) {
     let frame_end = 4 + len;
     assert!(buf.len() >= frame_end, "frame body truncated");
     let tag = LogMsgType::from_wire(buf[4] as i64).expect("known frame tag");
-    let body = cbor::decode(&buf[5..frame_end]);
+    let body = cbor::try_decode(&buf[5..frame_end]).expect("frame body decodes");
     (tag, body, &buf[frame_end..])
 }
 
@@ -199,6 +199,36 @@ fn malformed_frame_exits_3_without_panicking() {
         !out.stderr.is_empty(),
         "a malformed frame should log one stderr line"
     );
+}
+
+#[test]
+fn frame_length_above_the_cap_exits_3_on_its_prefix() {
+    // One byte above `framing::MAX_FRAME_BYTES` (16 MiB), and no body at all:
+    // a node that allocated and read the claimed body would meet a truncated
+    // tail and exit 0. The cap refuses the prefix itself ⇒ exit 3.
+    let len: u32 = 16 * 1024 * 1024 + 1;
+    let bin = env!("CARGO_BIN_EXE_taut-shape-tool");
+    let mut child = Command::new(bin)
+        .arg("node")
+        .stdin(Stdio::piped())
+        .stdout(Stdio::piped())
+        .stderr(Stdio::piped())
+        .spawn()
+        .expect("spawn");
+    child
+        .stdin
+        .take()
+        .unwrap()
+        .write_all(&len.to_le_bytes())
+        .unwrap();
+    let out = child.wait_with_output().expect("collect");
+    assert_eq!(out.status.code(), Some(3), "over-cap frame ⇒ exit 3");
+    let stderr = String::from_utf8_lossy(&out.stderr);
+    assert!(
+        stderr.contains("TAUT_SHAPE_MALFORMED_MESSAGE") && stderr.contains("16777217"),
+        "typed diagnostic naming the claimed length: {stderr}"
+    );
+    assert!(out.stdout.is_empty(), "no frame is emitted");
 }
 
 #[test]

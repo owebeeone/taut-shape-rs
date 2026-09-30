@@ -15,7 +15,8 @@ repo's CLI.
 - `crates/taut-shape-tool` — the conformance/interop CLI (`node`/`client`/
   `gen`/`check`). The `node`/`client` modes drive the selected engine over the shared
   length-prefixed, tagged-CBOR stdin/stdout framing (`src/framing.rs`, the
-  cross-language reference) and are what the interop matrix runs. `gen`/`check`
+  cross-language reference; a frame claiming more than `MAX_FRAME_BYTES`, 16 MiB,
+  is refused before its body is read) and are what the interop matrix runs. `gen`/`check`
   are **unimplemented stubs** (each prints what it would do and exits 2, see
   `crates/taut-shape-tool/src/main.rs`) — oracle emission/verification is done
   by the canonical repo's generator, not by this CLI.
@@ -28,7 +29,10 @@ frame.
 The message types in `crates/taut-shape/src/generated.rs` and
 `generated_atom.rs`, `generated_stream.rs`, `generated_value.rs`, and the CBOR runtime
 in `crates/taut-shape/src/cbor.rs` are **vendored/generated** — do not
-hand-edit; see each file's header for the source + regen command.
+hand-edit; see each file's header for the source + regen command. So is
+`crates/taut-shape/src/parity_vectors.rs`, taut's codec-parity rows, written by
+`scripts/gen_parity_vectors.py` from the taut tag `cbor.rs` names;
+`crates/taut-shape/tests/parity.rs` replays them against `cbor.rs`.
 
 ## Plans (the contract — read these first)
 

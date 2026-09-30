@@ -1,13 +1,18 @@
 // GENERATED native Rust types + codec — do not edit.
 // Source: taut-shape/ir/shape_stream.taut.py
 #![allow(dead_code)]
+#![cfg_attr(rustfmt, rustfmt::skip)]
 use crate::cbor::{Cbor, DecodeError};
 use alloc::{string::String, vec, vec::Vec};
 
+// The file's bounds, for a decode rooted at a type that is not a message:
+// `cbor::try_decode_with(bytes, MAX_DEPTH, MAX_ENCODED_LEN)`.
+pub const MAX_DEPTH: usize = 32;
+pub const MAX_ENCODED_LEN: Option<usize> = None;
+
 #[derive(Clone, Copy, Debug, PartialEq, Default)]
 pub enum StreamMsgType {
-    #[default]
-    Push,
+    #[default] Push,
     Seal,
     Close,
     Read,
@@ -20,48 +25,38 @@ pub enum StreamMsgType {
     Diagnostic,
 }
 impl StreamMsgType {
-    pub fn wire(self) -> i64 {
-        match self {
-            Self::Push => 0,
-            Self::Seal => 1,
-            Self::Close => 2,
-            Self::Read => 3,
-            Self::EndStream => 4,
-            Self::TimerExpired => 5,
-            Self::ReadResponse => 6,
-            Self::SetTimer => 7,
-            Self::CancelTimer => 8,
-            Self::ProducerStop => 9,
-            Self::Diagnostic => 10,
-        }
-    }
-    pub fn from_wire(v: i64) -> Result<Self, DecodeError> {
-        Ok(match v {
-            0 => Self::Push,
-            1 => Self::Seal,
-            2 => Self::Close,
-            3 => Self::Read,
-            4 => Self::EndStream,
-            5 => Self::TimerExpired,
-            6 => Self::ReadResponse,
-            7 => Self::SetTimer,
-            8 => Self::CancelTimer,
-            9 => Self::ProducerStop,
-            10 => Self::Diagnostic,
-            _ => {
-                return Err(DecodeError::UnknownEnum {
-                    enum_name: "StreamMsgType",
-                    value: v,
-                })
-            }
-        })
-    }
+    pub fn wire(self) -> i64 { match self {
+        Self::Push => 0,
+        Self::Seal => 1,
+        Self::Close => 2,
+        Self::Read => 3,
+        Self::EndStream => 4,
+        Self::TimerExpired => 5,
+        Self::ReadResponse => 6,
+        Self::SetTimer => 7,
+        Self::CancelTimer => 8,
+        Self::ProducerStop => 9,
+        Self::Diagnostic => 10,
+    } }
+    pub fn from_wire(v: i64) -> Result<Self, DecodeError> { Ok(match v {
+        0 => Self::Push,
+        1 => Self::Seal,
+        2 => Self::Close,
+        3 => Self::Read,
+        4 => Self::EndStream,
+        5 => Self::TimerExpired,
+        6 => Self::ReadResponse,
+        7 => Self::SetTimer,
+        8 => Self::CancelTimer,
+        9 => Self::ProducerStop,
+        10 => Self::Diagnostic,
+        _ => return Err(DecodeError::UnknownEnum { enum_name: "StreamMsgType", value: v }),
+    }) }
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Default)]
 pub enum StreamState {
-    #[default]
-    Data,
+    #[default] Data,
     WouldBlock,
     Eof,
     Closed,
@@ -69,146 +64,97 @@ pub enum StreamState {
     Dropped,
 }
 impl StreamState {
-    pub fn wire(self) -> i64 {
-        match self {
-            Self::Data => 0,
-            Self::WouldBlock => 1,
-            Self::Eof => 2,
-            Self::Closed => 3,
-            Self::Failed => 4,
-            Self::Dropped => 5,
-        }
-    }
-    pub fn from_wire(v: i64) -> Result<Self, DecodeError> {
-        Ok(match v {
-            0 => Self::Data,
-            1 => Self::WouldBlock,
-            2 => Self::Eof,
-            3 => Self::Closed,
-            4 => Self::Failed,
-            5 => Self::Dropped,
-            _ => {
-                return Err(DecodeError::UnknownEnum {
-                    enum_name: "StreamState",
-                    value: v,
-                })
-            }
-        })
-    }
+    pub fn wire(self) -> i64 { match self {
+        Self::Data => 0,
+        Self::WouldBlock => 1,
+        Self::Eof => 2,
+        Self::Closed => 3,
+        Self::Failed => 4,
+        Self::Dropped => 5,
+    } }
+    pub fn from_wire(v: i64) -> Result<Self, DecodeError> { Ok(match v {
+        0 => Self::Data,
+        1 => Self::WouldBlock,
+        2 => Self::Eof,
+        3 => Self::Closed,
+        4 => Self::Failed,
+        5 => Self::Dropped,
+        _ => return Err(DecodeError::UnknownEnum { enum_name: "StreamState", value: v }),
+    }) }
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Default)]
 pub enum StreamErrorCode {
-    #[default]
-    UnknownStream,
+    #[default] UnknownStream,
     ProducerError,
     Internal,
     SlowConsumer,
 }
 impl StreamErrorCode {
-    pub fn wire(self) -> i64 {
-        match self {
-            Self::UnknownStream => 0,
-            Self::ProducerError => 1,
-            Self::Internal => 2,
-            Self::SlowConsumer => 3,
-        }
-    }
-    pub fn from_wire(v: i64) -> Result<Self, DecodeError> {
-        Ok(match v {
-            0 => Self::UnknownStream,
-            1 => Self::ProducerError,
-            2 => Self::Internal,
-            3 => Self::SlowConsumer,
-            _ => {
-                return Err(DecodeError::UnknownEnum {
-                    enum_name: "StreamErrorCode",
-                    value: v,
-                })
-            }
-        })
-    }
+    pub fn wire(self) -> i64 { match self {
+        Self::UnknownStream => 0,
+        Self::ProducerError => 1,
+        Self::Internal => 2,
+        Self::SlowConsumer => 3,
+    } }
+    pub fn from_wire(v: i64) -> Result<Self, DecodeError> { Ok(match v {
+        0 => Self::UnknownStream,
+        1 => Self::ProducerError,
+        2 => Self::Internal,
+        3 => Self::SlowConsumer,
+        _ => return Err(DecodeError::UnknownEnum { enum_name: "StreamErrorCode", value: v }),
+    }) }
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Default)]
 pub enum StreamStopReason {
-    #[default]
-    LastReaderGone,
+    #[default] LastReaderGone,
     Closed,
     Failed,
 }
 impl StreamStopReason {
-    pub fn wire(self) -> i64 {
-        match self {
-            Self::LastReaderGone => 0,
-            Self::Closed => 1,
-            Self::Failed => 2,
-        }
-    }
-    pub fn from_wire(v: i64) -> Result<Self, DecodeError> {
-        Ok(match v {
-            0 => Self::LastReaderGone,
-            1 => Self::Closed,
-            2 => Self::Failed,
-            _ => {
-                return Err(DecodeError::UnknownEnum {
-                    enum_name: "StreamStopReason",
-                    value: v,
-                })
-            }
-        })
-    }
+    pub fn wire(self) -> i64 { match self {
+        Self::LastReaderGone => 0,
+        Self::Closed => 1,
+        Self::Failed => 2,
+    } }
+    pub fn from_wire(v: i64) -> Result<Self, DecodeError> { Ok(match v {
+        0 => Self::LastReaderGone,
+        1 => Self::Closed,
+        2 => Self::Failed,
+        _ => return Err(DecodeError::UnknownEnum { enum_name: "StreamStopReason", value: v }),
+    }) }
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Default)]
 pub enum StreamSeverity {
-    #[default]
-    Warn,
+    #[default] Warn,
     Error,
 }
 impl StreamSeverity {
-    pub fn wire(self) -> i64 {
-        match self {
-            Self::Warn => 0,
-            Self::Error => 1,
-        }
-    }
-    pub fn from_wire(v: i64) -> Result<Self, DecodeError> {
-        Ok(match v {
-            0 => Self::Warn,
-            1 => Self::Error,
-            _ => {
-                return Err(DecodeError::UnknownEnum {
-                    enum_name: "StreamSeverity",
-                    value: v,
-                })
-            }
-        })
-    }
+    pub fn wire(self) -> i64 { match self {
+        Self::Warn => 0,
+        Self::Error => 1,
+    } }
+    pub fn from_wire(v: i64) -> Result<Self, DecodeError> { Ok(match v {
+        0 => Self::Warn,
+        1 => Self::Error,
+        _ => return Err(DecodeError::UnknownEnum { enum_name: "StreamSeverity", value: v }),
+    }) }
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Default)]
 pub enum StreamDiagCode {
-    #[default]
-    PushAfterTerminal,
+    #[default] PushAfterTerminal,
 }
 impl StreamDiagCode {
-    pub fn wire(self) -> i64 {
-        match self {
-            Self::PushAfterTerminal => 0,
-        }
-    }
-    pub fn from_wire(v: i64) -> Result<Self, DecodeError> {
-        Ok(match v {
-            0 => Self::PushAfterTerminal,
-            _ => {
-                return Err(DecodeError::UnknownEnum {
-                    enum_name: "StreamDiagCode",
-                    value: v,
-                })
-            }
-        })
-    }
+    pub fn wire(self) -> i64 { match self {
+        Self::PushAfterTerminal => 0,
+    } }
+    pub fn from_wire(v: i64) -> Result<Self, DecodeError> { Ok(match v {
+        0 => Self::PushAfterTerminal,
+        _ => return Err(DecodeError::UnknownEnum { enum_name: "StreamDiagCode", value: v }),
+    }) }
 }
 
 #[derive(Clone, Debug, PartialEq, Default)]
@@ -216,13 +162,20 @@ pub struct StreamPosition {
     pub seq: i64,
 }
 impl StreamPosition {
+    pub const MAX_DEPTH: usize = 32;
+    pub const MAX_ENCODED_LEN: Option<usize> = None;
     pub fn to_cbor(&self) -> Cbor {
-        Cbor::Map(vec![(1, Cbor::Int(self.seq))])
+        Cbor::Map(vec![
+            (1, Cbor::Int(self.seq)),
+        ])
     }
     pub fn from_cbor(c: &Cbor) -> Result<Self, DecodeError> {
         Ok(Self {
             seq: c.try_get(1)?.try_int()?,
         })
+    }
+    pub fn decode(bytes: &[u8]) -> Result<Self, DecodeError> {
+        Self::from_cbor(&crate::cbor::try_decode_with(bytes, Self::MAX_DEPTH, Self::MAX_ENCODED_LEN)?)
     }
 }
 
@@ -232,6 +185,8 @@ pub struct StreamRecord {
     pub payload: Vec<u8>,
 }
 impl StreamRecord {
+    pub const MAX_DEPTH: usize = 32;
+    pub const MAX_ENCODED_LEN: Option<usize> = None;
     pub fn to_cbor(&self) -> Cbor {
         Cbor::Map(vec![
             (1, Cbor::Int(self.seq)),
@@ -244,6 +199,9 @@ impl StreamRecord {
             payload: c.try_get(2)?.try_bytes()?,
         })
     }
+    pub fn decode(bytes: &[u8]) -> Result<Self, DecodeError> {
+        Self::from_cbor(&crate::cbor::try_decode_with(bytes, Self::MAX_DEPTH, Self::MAX_ENCODED_LEN)?)
+    }
 }
 
 #[derive(Clone, Debug, PartialEq, Default)]
@@ -252,30 +210,22 @@ pub struct StreamError {
     pub message: Option<String>,
 }
 impl StreamError {
+    pub const MAX_DEPTH: usize = 32;
+    pub const MAX_ENCODED_LEN: Option<usize> = None;
     pub fn to_cbor(&self) -> Cbor {
         Cbor::Map(vec![
             (1, Cbor::Int(self.code.wire())),
-            (
-                2,
-                match &self.message {
-                    Some(v) => Cbor::Text(v.clone()),
-                    None => Cbor::Null,
-                },
-            ),
+            (2, match &self.message { Some(v) => Cbor::Text(v.clone()), None => Cbor::Null }),
         ])
     }
     pub fn from_cbor(c: &Cbor) -> Result<Self, DecodeError> {
         Ok(Self {
             code: StreamErrorCode::from_wire(c.try_get(1)?.try_int()?)?,
-            message: {
-                let v = c.try_get(2)?;
-                if v.is_null() {
-                    None
-                } else {
-                    Some(v.try_text()?)
-                }
-            },
+            message: { let v = c.try_get(2)?; if v.is_null() { None } else { Some(v.try_text()?) } },
         })
+    }
+    pub fn decode(bytes: &[u8]) -> Result<Self, DecodeError> {
+        Self::from_cbor(&crate::cbor::try_decode_with(bytes, Self::MAX_DEPTH, Self::MAX_ENCODED_LEN)?)
     }
 }
 
@@ -284,24 +234,40 @@ pub struct StreamPush {
     pub payload: Vec<u8>,
 }
 impl StreamPush {
+    pub const MAX_DEPTH: usize = 32;
+    pub const MAX_ENCODED_LEN: Option<usize> = None;
     pub fn to_cbor(&self) -> Cbor {
-        Cbor::Map(vec![(1, Cbor::Bytes(self.payload.clone()))])
+        Cbor::Map(vec![
+            (1, Cbor::Bytes(self.payload.clone())),
+        ])
     }
     pub fn from_cbor(c: &Cbor) -> Result<Self, DecodeError> {
         Ok(Self {
             payload: c.try_get(1)?.try_bytes()?,
         })
     }
+    pub fn decode(bytes: &[u8]) -> Result<Self, DecodeError> {
+        Self::from_cbor(&crate::cbor::try_decode_with(bytes, Self::MAX_DEPTH, Self::MAX_ENCODED_LEN)?)
+    }
 }
 
 #[derive(Clone, Debug, PartialEq, Default)]
-pub struct StreamSeal {}
+pub struct StreamSeal {
+}
 impl StreamSeal {
+    pub const MAX_DEPTH: usize = 32;
+    pub const MAX_ENCODED_LEN: Option<usize> = None;
     pub fn to_cbor(&self) -> Cbor {
-        Cbor::Map(vec![])
+        Cbor::Map(vec![
+        ])
     }
     pub fn from_cbor(c: &Cbor) -> Result<Self, DecodeError> {
-        Ok(Self {})
+        if !c.is_map() { return Err(DecodeError::WrongType { expected: "map" }); }
+        Ok(Self {
+        })
+    }
+    pub fn decode(bytes: &[u8]) -> Result<Self, DecodeError> {
+        Self::from_cbor(&crate::cbor::try_decode_with(bytes, Self::MAX_DEPTH, Self::MAX_ENCODED_LEN)?)
     }
 }
 
@@ -310,26 +276,20 @@ pub struct StreamClose {
     pub error: Option<StreamError>,
 }
 impl StreamClose {
+    pub const MAX_DEPTH: usize = 32;
+    pub const MAX_ENCODED_LEN: Option<usize> = None;
     pub fn to_cbor(&self) -> Cbor {
-        Cbor::Map(vec![(
-            1,
-            match &self.error {
-                Some(v) => v.to_cbor(),
-                None => Cbor::Null,
-            },
-        )])
+        Cbor::Map(vec![
+            (1, match &self.error { Some(v) => v.to_cbor(), None => Cbor::Null }),
+        ])
     }
     pub fn from_cbor(c: &Cbor) -> Result<Self, DecodeError> {
         Ok(Self {
-            error: {
-                let v = c.try_get(1)?;
-                if v.is_null() {
-                    None
-                } else {
-                    Some(StreamError::from_cbor(v)?)
-                }
-            },
+            error: { let v = c.try_get(1)?; if v.is_null() { None } else { Some(StreamError::from_cbor(v)?) } },
         })
+    }
+    pub fn decode(bytes: &[u8]) -> Result<Self, DecodeError> {
+        Self::from_cbor(&crate::cbor::try_decode_with(bytes, Self::MAX_DEPTH, Self::MAX_ENCODED_LEN)?)
     }
 }
 
@@ -341,60 +301,26 @@ pub struct StreamReadRequest {
     pub timeout_ms: Option<i64>,
 }
 impl StreamReadRequest {
+    pub const MAX_DEPTH: usize = 32;
+    pub const MAX_ENCODED_LEN: Option<usize> = None;
     pub fn to_cbor(&self) -> Cbor {
         Cbor::Map(vec![
             (1, Cbor::Text(self.stream_id.clone())),
-            (
-                2,
-                match &self.max_records {
-                    Some(v) => Cbor::Int(*v),
-                    None => Cbor::Null,
-                },
-            ),
-            (
-                3,
-                match &self.max_bytes {
-                    Some(v) => Cbor::Int(*v),
-                    None => Cbor::Null,
-                },
-            ),
-            (
-                4,
-                match &self.timeout_ms {
-                    Some(v) => Cbor::Int(*v),
-                    None => Cbor::Null,
-                },
-            ),
+            (2, match &self.max_records { Some(v) => Cbor::Int(*v), None => Cbor::Null }),
+            (3, match &self.max_bytes { Some(v) => Cbor::Int(*v), None => Cbor::Null }),
+            (4, match &self.timeout_ms { Some(v) => Cbor::Int(*v), None => Cbor::Null }),
         ])
     }
     pub fn from_cbor(c: &Cbor) -> Result<Self, DecodeError> {
         Ok(Self {
             stream_id: c.try_get(1)?.try_text()?,
-            max_records: {
-                let v = c.try_get(2)?;
-                if v.is_null() {
-                    None
-                } else {
-                    Some(v.try_int()?)
-                }
-            },
-            max_bytes: {
-                let v = c.try_get(3)?;
-                if v.is_null() {
-                    None
-                } else {
-                    Some(v.try_int()?)
-                }
-            },
-            timeout_ms: {
-                let v = c.try_get(4)?;
-                if v.is_null() {
-                    None
-                } else {
-                    Some(v.try_int()?)
-                }
-            },
+            max_records: { let v = c.try_get(2)?; if v.is_null() { None } else { Some(v.try_int()?) } },
+            max_bytes: { let v = c.try_get(3)?; if v.is_null() { None } else { Some(v.try_int()?) } },
+            timeout_ms: { let v = c.try_get(4)?; if v.is_null() { None } else { Some(v.try_int()?) } },
         })
+    }
+    pub fn decode(bytes: &[u8]) -> Result<Self, DecodeError> {
+        Self::from_cbor(&crate::cbor::try_decode_with(bytes, Self::MAX_DEPTH, Self::MAX_ENCODED_LEN)?)
     }
 }
 
@@ -403,13 +329,20 @@ pub struct StreamEndStream {
     pub stream_id: String,
 }
 impl StreamEndStream {
+    pub const MAX_DEPTH: usize = 32;
+    pub const MAX_ENCODED_LEN: Option<usize> = None;
     pub fn to_cbor(&self) -> Cbor {
-        Cbor::Map(vec![(1, Cbor::Text(self.stream_id.clone()))])
+        Cbor::Map(vec![
+            (1, Cbor::Text(self.stream_id.clone())),
+        ])
     }
     pub fn from_cbor(c: &Cbor) -> Result<Self, DecodeError> {
         Ok(Self {
             stream_id: c.try_get(1)?.try_text()?,
         })
+    }
+    pub fn decode(bytes: &[u8]) -> Result<Self, DecodeError> {
+        Self::from_cbor(&crate::cbor::try_decode_with(bytes, Self::MAX_DEPTH, Self::MAX_ENCODED_LEN)?)
     }
 }
 
@@ -418,13 +351,20 @@ pub struct StreamTimerExpired {
     pub token: i64,
 }
 impl StreamTimerExpired {
+    pub const MAX_DEPTH: usize = 32;
+    pub const MAX_ENCODED_LEN: Option<usize> = None;
     pub fn to_cbor(&self) -> Cbor {
-        Cbor::Map(vec![(1, Cbor::Int(self.token))])
+        Cbor::Map(vec![
+            (1, Cbor::Int(self.token)),
+        ])
     }
     pub fn from_cbor(c: &Cbor) -> Result<Self, DecodeError> {
         Ok(Self {
             token: c.try_get(1)?.try_int()?,
         })
+    }
+    pub fn decode(bytes: &[u8]) -> Result<Self, DecodeError> {
+        Self::from_cbor(&crate::cbor::try_decode_with(bytes, Self::MAX_DEPTH, Self::MAX_ENCODED_LEN)?)
     }
 }
 
@@ -437,44 +377,28 @@ pub struct StreamReadResponse {
     pub error: Option<StreamError>,
 }
 impl StreamReadResponse {
+    pub const MAX_DEPTH: usize = 32;
+    pub const MAX_ENCODED_LEN: Option<usize> = None;
     pub fn to_cbor(&self) -> Cbor {
         Cbor::Map(vec![
             (1, Cbor::Text(self.stream_id.clone())),
-            (
-                2,
-                Cbor::Array(self.records.iter().map(|x| x.to_cbor()).collect()),
-            ),
+            (2, Cbor::Array(self.records.iter().map(|x| x.to_cbor()).collect())),
             (3, self.next_position.to_cbor()),
             (4, Cbor::Int(self.state.wire())),
-            (
-                5,
-                match &self.error {
-                    Some(v) => v.to_cbor(),
-                    None => Cbor::Null,
-                },
-            ),
+            (5, match &self.error { Some(v) => v.to_cbor(), None => Cbor::Null }),
         ])
     }
     pub fn from_cbor(c: &Cbor) -> Result<Self, DecodeError> {
         Ok(Self {
             stream_id: c.try_get(1)?.try_text()?,
-            records: c
-                .try_get(2)?
-                .try_array()?
-                .iter()
-                .map(|x| StreamRecord::from_cbor(x))
-                .collect::<Result<Vec<_>, DecodeError>>()?,
+            records: c.try_get(2)?.try_array()?.iter().map(|x| StreamRecord::from_cbor(x)).collect::<Result<Vec<_>, DecodeError>>()?,
             next_position: StreamPosition::from_cbor(c.try_get(3)?)?,
             state: StreamState::from_wire(c.try_get(4)?.try_int()?)?,
-            error: {
-                let v = c.try_get(5)?;
-                if v.is_null() {
-                    None
-                } else {
-                    Some(StreamError::from_cbor(v)?)
-                }
-            },
+            error: { let v = c.try_get(5)?; if v.is_null() { None } else { Some(StreamError::from_cbor(v)?) } },
         })
+    }
+    pub fn decode(bytes: &[u8]) -> Result<Self, DecodeError> {
+        Self::from_cbor(&crate::cbor::try_decode_with(bytes, Self::MAX_DEPTH, Self::MAX_ENCODED_LEN)?)
     }
 }
 
@@ -484,14 +408,22 @@ pub struct StreamSetTimer {
     pub ms: i64,
 }
 impl StreamSetTimer {
+    pub const MAX_DEPTH: usize = 32;
+    pub const MAX_ENCODED_LEN: Option<usize> = None;
     pub fn to_cbor(&self) -> Cbor {
-        Cbor::Map(vec![(1, Cbor::Int(self.token)), (2, Cbor::Int(self.ms))])
+        Cbor::Map(vec![
+            (1, Cbor::Int(self.token)),
+            (2, Cbor::Int(self.ms)),
+        ])
     }
     pub fn from_cbor(c: &Cbor) -> Result<Self, DecodeError> {
         Ok(Self {
             token: c.try_get(1)?.try_int()?,
             ms: c.try_get(2)?.try_int()?,
         })
+    }
+    pub fn decode(bytes: &[u8]) -> Result<Self, DecodeError> {
+        Self::from_cbor(&crate::cbor::try_decode_with(bytes, Self::MAX_DEPTH, Self::MAX_ENCODED_LEN)?)
     }
 }
 
@@ -500,13 +432,20 @@ pub struct StreamCancelTimer {
     pub token: i64,
 }
 impl StreamCancelTimer {
+    pub const MAX_DEPTH: usize = 32;
+    pub const MAX_ENCODED_LEN: Option<usize> = None;
     pub fn to_cbor(&self) -> Cbor {
-        Cbor::Map(vec![(1, Cbor::Int(self.token))])
+        Cbor::Map(vec![
+            (1, Cbor::Int(self.token)),
+        ])
     }
     pub fn from_cbor(c: &Cbor) -> Result<Self, DecodeError> {
         Ok(Self {
             token: c.try_get(1)?.try_int()?,
         })
+    }
+    pub fn decode(bytes: &[u8]) -> Result<Self, DecodeError> {
+        Self::from_cbor(&crate::cbor::try_decode_with(bytes, Self::MAX_DEPTH, Self::MAX_ENCODED_LEN)?)
     }
 }
 
@@ -515,13 +454,20 @@ pub struct StreamProducerStop {
     pub reason: StreamStopReason,
 }
 impl StreamProducerStop {
+    pub const MAX_DEPTH: usize = 32;
+    pub const MAX_ENCODED_LEN: Option<usize> = None;
     pub fn to_cbor(&self) -> Cbor {
-        Cbor::Map(vec![(1, Cbor::Int(self.reason.wire()))])
+        Cbor::Map(vec![
+            (1, Cbor::Int(self.reason.wire())),
+        ])
     }
     pub fn from_cbor(c: &Cbor) -> Result<Self, DecodeError> {
         Ok(Self {
             reason: StreamStopReason::from_wire(c.try_get(1)?.try_int()?)?,
         })
+    }
+    pub fn decode(bytes: &[u8]) -> Result<Self, DecodeError> {
+        Self::from_cbor(&crate::cbor::try_decode_with(bytes, Self::MAX_DEPTH, Self::MAX_ENCODED_LEN)?)
     }
 }
 
@@ -531,6 +477,8 @@ pub struct StreamDiagnostic {
     pub code: StreamDiagCode,
 }
 impl StreamDiagnostic {
+    pub const MAX_DEPTH: usize = 32;
+    pub const MAX_ENCODED_LEN: Option<usize> = None;
     pub fn to_cbor(&self) -> Cbor {
         Cbor::Map(vec![
             (1, Cbor::Int(self.severity.wire())),
@@ -542,5 +490,8 @@ impl StreamDiagnostic {
             severity: StreamSeverity::from_wire(c.try_get(1)?.try_int()?)?,
             code: StreamDiagCode::from_wire(c.try_get(2)?.try_int()?)?,
         })
+    }
+    pub fn decode(bytes: &[u8]) -> Result<Self, DecodeError> {
+        Self::from_cbor(&crate::cbor::try_decode_with(bytes, Self::MAX_DEPTH, Self::MAX_ENCODED_LEN)?)
     }
 }

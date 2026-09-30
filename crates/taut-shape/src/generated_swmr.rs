@@ -1,13 +1,18 @@
 // GENERATED native Rust types + codec — do not edit.
 // Source: taut-shape/ir/shape_swmr.taut.py
 #![allow(dead_code)]
+#![cfg_attr(rustfmt, rustfmt::skip)]
 use crate::cbor::{Cbor, DecodeError};
 use alloc::{string::String, vec, vec::Vec};
 
+// The file's bounds, for a decode rooted at a type that is not a message:
+// `cbor::try_decode_with(bytes, MAX_DEPTH, MAX_ENCODED_LEN)`.
+pub const MAX_DEPTH: usize = 32;
+pub const MAX_ENCODED_LEN: Option<usize> = None;
+
 #[derive(Clone, Copy, Debug, PartialEq, Default)]
 pub enum SwmrMsgType {
-    #[default]
-    SnapshotPush,
+    #[default] SnapshotPush,
     DeltaPush,
     Reset,
     Seal,
@@ -22,52 +27,42 @@ pub enum SwmrMsgType {
     Diagnostic,
 }
 impl SwmrMsgType {
-    pub fn wire(self) -> i64 {
-        match self {
-            Self::SnapshotPush => 0,
-            Self::DeltaPush => 1,
-            Self::Reset => 2,
-            Self::Seal => 3,
-            Self::Close => 4,
-            Self::Read => 5,
-            Self::EndStream => 6,
-            Self::TimerExpired => 7,
-            Self::ReadResponse => 8,
-            Self::SetTimer => 9,
-            Self::CancelTimer => 10,
-            Self::ProducerStop => 11,
-            Self::Diagnostic => 12,
-        }
-    }
-    pub fn from_wire(v: i64) -> Result<Self, DecodeError> {
-        Ok(match v {
-            0 => Self::SnapshotPush,
-            1 => Self::DeltaPush,
-            2 => Self::Reset,
-            3 => Self::Seal,
-            4 => Self::Close,
-            5 => Self::Read,
-            6 => Self::EndStream,
-            7 => Self::TimerExpired,
-            8 => Self::ReadResponse,
-            9 => Self::SetTimer,
-            10 => Self::CancelTimer,
-            11 => Self::ProducerStop,
-            12 => Self::Diagnostic,
-            _ => {
-                return Err(DecodeError::UnknownEnum {
-                    enum_name: "SwmrMsgType",
-                    value: v,
-                })
-            }
-        })
-    }
+    pub fn wire(self) -> i64 { match self {
+        Self::SnapshotPush => 0,
+        Self::DeltaPush => 1,
+        Self::Reset => 2,
+        Self::Seal => 3,
+        Self::Close => 4,
+        Self::Read => 5,
+        Self::EndStream => 6,
+        Self::TimerExpired => 7,
+        Self::ReadResponse => 8,
+        Self::SetTimer => 9,
+        Self::CancelTimer => 10,
+        Self::ProducerStop => 11,
+        Self::Diagnostic => 12,
+    } }
+    pub fn from_wire(v: i64) -> Result<Self, DecodeError> { Ok(match v {
+        0 => Self::SnapshotPush,
+        1 => Self::DeltaPush,
+        2 => Self::Reset,
+        3 => Self::Seal,
+        4 => Self::Close,
+        5 => Self::Read,
+        6 => Self::EndStream,
+        7 => Self::TimerExpired,
+        8 => Self::ReadResponse,
+        9 => Self::SetTimer,
+        10 => Self::CancelTimer,
+        11 => Self::ProducerStop,
+        12 => Self::Diagnostic,
+        _ => return Err(DecodeError::UnknownEnum { enum_name: "SwmrMsgType", value: v }),
+    }) }
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Default)]
 pub enum SwmrState {
-    #[default]
-    Data,
+    #[default] Data,
     WouldBlock,
     Eof,
     Closed,
@@ -75,182 +70,123 @@ pub enum SwmrState {
     Reset,
 }
 impl SwmrState {
-    pub fn wire(self) -> i64 {
-        match self {
-            Self::Data => 0,
-            Self::WouldBlock => 1,
-            Self::Eof => 2,
-            Self::Closed => 3,
-            Self::Failed => 4,
-            Self::Reset => 5,
-        }
-    }
-    pub fn from_wire(v: i64) -> Result<Self, DecodeError> {
-        Ok(match v {
-            0 => Self::Data,
-            1 => Self::WouldBlock,
-            2 => Self::Eof,
-            3 => Self::Closed,
-            4 => Self::Failed,
-            5 => Self::Reset,
-            _ => {
-                return Err(DecodeError::UnknownEnum {
-                    enum_name: "SwmrState",
-                    value: v,
-                })
-            }
-        })
-    }
+    pub fn wire(self) -> i64 { match self {
+        Self::Data => 0,
+        Self::WouldBlock => 1,
+        Self::Eof => 2,
+        Self::Closed => 3,
+        Self::Failed => 4,
+        Self::Reset => 5,
+    } }
+    pub fn from_wire(v: i64) -> Result<Self, DecodeError> { Ok(match v {
+        0 => Self::Data,
+        1 => Self::WouldBlock,
+        2 => Self::Eof,
+        3 => Self::Closed,
+        4 => Self::Failed,
+        5 => Self::Reset,
+        _ => return Err(DecodeError::UnknownEnum { enum_name: "SwmrState", value: v }),
+    }) }
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Default)]
 pub enum SwmrErrorCode {
-    #[default]
-    UnknownSwmr,
+    #[default] UnknownSwmr,
     ProducerError,
     Internal,
 }
 impl SwmrErrorCode {
-    pub fn wire(self) -> i64 {
-        match self {
-            Self::UnknownSwmr => 0,
-            Self::ProducerError => 1,
-            Self::Internal => 2,
-        }
-    }
-    pub fn from_wire(v: i64) -> Result<Self, DecodeError> {
-        Ok(match v {
-            0 => Self::UnknownSwmr,
-            1 => Self::ProducerError,
-            2 => Self::Internal,
-            _ => {
-                return Err(DecodeError::UnknownEnum {
-                    enum_name: "SwmrErrorCode",
-                    value: v,
-                })
-            }
-        })
-    }
+    pub fn wire(self) -> i64 { match self {
+        Self::UnknownSwmr => 0,
+        Self::ProducerError => 1,
+        Self::Internal => 2,
+    } }
+    pub fn from_wire(v: i64) -> Result<Self, DecodeError> { Ok(match v {
+        0 => Self::UnknownSwmr,
+        1 => Self::ProducerError,
+        2 => Self::Internal,
+        _ => return Err(DecodeError::UnknownEnum { enum_name: "SwmrErrorCode", value: v }),
+    }) }
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Default)]
 pub enum SwmrStopReason {
-    #[default]
-    LastReaderGone,
+    #[default] LastReaderGone,
     Closed,
     Failed,
 }
 impl SwmrStopReason {
-    pub fn wire(self) -> i64 {
-        match self {
-            Self::LastReaderGone => 0,
-            Self::Closed => 1,
-            Self::Failed => 2,
-        }
-    }
-    pub fn from_wire(v: i64) -> Result<Self, DecodeError> {
-        Ok(match v {
-            0 => Self::LastReaderGone,
-            1 => Self::Closed,
-            2 => Self::Failed,
-            _ => {
-                return Err(DecodeError::UnknownEnum {
-                    enum_name: "SwmrStopReason",
-                    value: v,
-                })
-            }
-        })
-    }
+    pub fn wire(self) -> i64 { match self {
+        Self::LastReaderGone => 0,
+        Self::Closed => 1,
+        Self::Failed => 2,
+    } }
+    pub fn from_wire(v: i64) -> Result<Self, DecodeError> { Ok(match v {
+        0 => Self::LastReaderGone,
+        1 => Self::Closed,
+        2 => Self::Failed,
+        _ => return Err(DecodeError::UnknownEnum { enum_name: "SwmrStopReason", value: v }),
+    }) }
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Default)]
 pub enum SwmrResetReason {
-    #[default]
-    ProducerRequested,
+    #[default] ProducerRequested,
     RetentionExceeded,
     InvalidResumeSeq,
 }
 impl SwmrResetReason {
-    pub fn wire(self) -> i64 {
-        match self {
-            Self::ProducerRequested => 0,
-            Self::RetentionExceeded => 1,
-            Self::InvalidResumeSeq => 2,
-        }
-    }
-    pub fn from_wire(v: i64) -> Result<Self, DecodeError> {
-        Ok(match v {
-            0 => Self::ProducerRequested,
-            1 => Self::RetentionExceeded,
-            2 => Self::InvalidResumeSeq,
-            _ => {
-                return Err(DecodeError::UnknownEnum {
-                    enum_name: "SwmrResetReason",
-                    value: v,
-                })
-            }
-        })
-    }
+    pub fn wire(self) -> i64 { match self {
+        Self::ProducerRequested => 0,
+        Self::RetentionExceeded => 1,
+        Self::InvalidResumeSeq => 2,
+    } }
+    pub fn from_wire(v: i64) -> Result<Self, DecodeError> { Ok(match v {
+        0 => Self::ProducerRequested,
+        1 => Self::RetentionExceeded,
+        2 => Self::InvalidResumeSeq,
+        _ => return Err(DecodeError::UnknownEnum { enum_name: "SwmrResetReason", value: v }),
+    }) }
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Default)]
 pub enum SwmrSeverity {
-    #[default]
-    Warn,
+    #[default] Warn,
     Error,
 }
 impl SwmrSeverity {
-    pub fn wire(self) -> i64 {
-        match self {
-            Self::Warn => 0,
-            Self::Error => 1,
-        }
-    }
-    pub fn from_wire(v: i64) -> Result<Self, DecodeError> {
-        Ok(match v {
-            0 => Self::Warn,
-            1 => Self::Error,
-            _ => {
-                return Err(DecodeError::UnknownEnum {
-                    enum_name: "SwmrSeverity",
-                    value: v,
-                })
-            }
-        })
-    }
+    pub fn wire(self) -> i64 { match self {
+        Self::Warn => 0,
+        Self::Error => 1,
+    } }
+    pub fn from_wire(v: i64) -> Result<Self, DecodeError> { Ok(match v {
+        0 => Self::Warn,
+        1 => Self::Error,
+        _ => return Err(DecodeError::UnknownEnum { enum_name: "SwmrSeverity", value: v }),
+    }) }
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Default)]
 pub enum SwmrDiagCode {
-    #[default]
-    PushAfterTerminal,
+    #[default] PushAfterTerminal,
     DeltaBeforeSnapshot,
     WriterConflict,
     RetentionBoundExceeded,
 }
 impl SwmrDiagCode {
-    pub fn wire(self) -> i64 {
-        match self {
-            Self::PushAfterTerminal => 0,
-            Self::DeltaBeforeSnapshot => 1,
-            Self::WriterConflict => 2,
-            Self::RetentionBoundExceeded => 3,
-        }
-    }
-    pub fn from_wire(v: i64) -> Result<Self, DecodeError> {
-        Ok(match v {
-            0 => Self::PushAfterTerminal,
-            1 => Self::DeltaBeforeSnapshot,
-            2 => Self::WriterConflict,
-            3 => Self::RetentionBoundExceeded,
-            _ => {
-                return Err(DecodeError::UnknownEnum {
-                    enum_name: "SwmrDiagCode",
-                    value: v,
-                })
-            }
-        })
-    }
+    pub fn wire(self) -> i64 { match self {
+        Self::PushAfterTerminal => 0,
+        Self::DeltaBeforeSnapshot => 1,
+        Self::WriterConflict => 2,
+        Self::RetentionBoundExceeded => 3,
+    } }
+    pub fn from_wire(v: i64) -> Result<Self, DecodeError> { Ok(match v {
+        0 => Self::PushAfterTerminal,
+        1 => Self::DeltaBeforeSnapshot,
+        2 => Self::WriterConflict,
+        3 => Self::RetentionBoundExceeded,
+        _ => return Err(DecodeError::UnknownEnum { enum_name: "SwmrDiagCode", value: v }),
+    }) }
 }
 
 #[derive(Clone, Debug, PartialEq, Default)]
@@ -259,14 +195,22 @@ pub struct SwmrCursor {
     pub epoch: i64,
 }
 impl SwmrCursor {
+    pub const MAX_DEPTH: usize = 32;
+    pub const MAX_ENCODED_LEN: Option<usize> = None;
     pub fn to_cbor(&self) -> Cbor {
-        Cbor::Map(vec![(1, Cbor::Int(self.seq)), (2, Cbor::Int(self.epoch))])
+        Cbor::Map(vec![
+            (1, Cbor::Int(self.seq)),
+            (2, Cbor::Int(self.epoch)),
+        ])
     }
     pub fn from_cbor(c: &Cbor) -> Result<Self, DecodeError> {
         Ok(Self {
             seq: c.try_get(1)?.try_int()?,
             epoch: c.try_get(2)?.try_int()?,
         })
+    }
+    pub fn decode(bytes: &[u8]) -> Result<Self, DecodeError> {
+        Self::from_cbor(&crate::cbor::try_decode_with(bytes, Self::MAX_DEPTH, Self::MAX_ENCODED_LEN)?)
     }
 }
 
@@ -276,6 +220,8 @@ pub struct SwmrSnapshot {
     pub payload: Vec<u8>,
 }
 impl SwmrSnapshot {
+    pub const MAX_DEPTH: usize = 32;
+    pub const MAX_ENCODED_LEN: Option<usize> = None;
     pub fn to_cbor(&self) -> Cbor {
         Cbor::Map(vec![
             (1, Cbor::Int(self.seq)),
@@ -288,6 +234,9 @@ impl SwmrSnapshot {
             payload: c.try_get(2)?.try_bytes()?,
         })
     }
+    pub fn decode(bytes: &[u8]) -> Result<Self, DecodeError> {
+        Self::from_cbor(&crate::cbor::try_decode_with(bytes, Self::MAX_DEPTH, Self::MAX_ENCODED_LEN)?)
+    }
 }
 
 #[derive(Clone, Debug, PartialEq, Default)]
@@ -297,6 +246,8 @@ pub struct SwmrDelta {
     pub payload: Vec<u8>,
 }
 impl SwmrDelta {
+    pub const MAX_DEPTH: usize = 32;
+    pub const MAX_ENCODED_LEN: Option<usize> = None;
     pub fn to_cbor(&self) -> Cbor {
         Cbor::Map(vec![
             (1, Cbor::Int(self.base_seq)),
@@ -311,6 +262,9 @@ impl SwmrDelta {
             payload: c.try_get(3)?.try_bytes()?,
         })
     }
+    pub fn decode(bytes: &[u8]) -> Result<Self, DecodeError> {
+        Self::from_cbor(&crate::cbor::try_decode_with(bytes, Self::MAX_DEPTH, Self::MAX_ENCODED_LEN)?)
+    }
 }
 
 #[derive(Clone, Debug, PartialEq, Default)]
@@ -319,30 +273,22 @@ pub struct SwmrError {
     pub message: Option<String>,
 }
 impl SwmrError {
+    pub const MAX_DEPTH: usize = 32;
+    pub const MAX_ENCODED_LEN: Option<usize> = None;
     pub fn to_cbor(&self) -> Cbor {
         Cbor::Map(vec![
             (1, Cbor::Int(self.code.wire())),
-            (
-                2,
-                match &self.message {
-                    Some(v) => Cbor::Text(v.clone()),
-                    None => Cbor::Null,
-                },
-            ),
+            (2, match &self.message { Some(v) => Cbor::Text(v.clone()), None => Cbor::Null }),
         ])
     }
     pub fn from_cbor(c: &Cbor) -> Result<Self, DecodeError> {
         Ok(Self {
             code: SwmrErrorCode::from_wire(c.try_get(1)?.try_int()?)?,
-            message: {
-                let v = c.try_get(2)?;
-                if v.is_null() {
-                    None
-                } else {
-                    Some(v.try_text()?)
-                }
-            },
+            message: { let v = c.try_get(2)?; if v.is_null() { None } else { Some(v.try_text()?) } },
         })
+    }
+    pub fn decode(bytes: &[u8]) -> Result<Self, DecodeError> {
+        Self::from_cbor(&crate::cbor::try_decode_with(bytes, Self::MAX_DEPTH, Self::MAX_ENCODED_LEN)?)
     }
 }
 
@@ -352,6 +298,8 @@ pub struct SwmrSnapshotPush {
     pub payload: Vec<u8>,
 }
 impl SwmrSnapshotPush {
+    pub const MAX_DEPTH: usize = 32;
+    pub const MAX_ENCODED_LEN: Option<usize> = None;
     pub fn to_cbor(&self) -> Cbor {
         Cbor::Map(vec![
             (1, Cbor::Text(self.writer_id.clone())),
@@ -363,6 +311,9 @@ impl SwmrSnapshotPush {
             writer_id: c.try_get(1)?.try_text()?,
             payload: c.try_get(2)?.try_bytes()?,
         })
+    }
+    pub fn decode(bytes: &[u8]) -> Result<Self, DecodeError> {
+        Self::from_cbor(&crate::cbor::try_decode_with(bytes, Self::MAX_DEPTH, Self::MAX_ENCODED_LEN)?)
     }
 }
 
@@ -372,6 +323,8 @@ pub struct SwmrDeltaPush {
     pub payload: Vec<u8>,
 }
 impl SwmrDeltaPush {
+    pub const MAX_DEPTH: usize = 32;
+    pub const MAX_ENCODED_LEN: Option<usize> = None;
     pub fn to_cbor(&self) -> Cbor {
         Cbor::Map(vec![
             (1, Cbor::Text(self.writer_id.clone())),
@@ -383,6 +336,9 @@ impl SwmrDeltaPush {
             writer_id: c.try_get(1)?.try_text()?,
             payload: c.try_get(2)?.try_bytes()?,
         })
+    }
+    pub fn decode(bytes: &[u8]) -> Result<Self, DecodeError> {
+        Self::from_cbor(&crate::cbor::try_decode_with(bytes, Self::MAX_DEPTH, Self::MAX_ENCODED_LEN)?)
     }
 }
 
@@ -393,43 +349,44 @@ pub struct SwmrReset {
     pub detail: Option<Vec<u8>>,
 }
 impl SwmrReset {
+    pub const MAX_DEPTH: usize = 32;
+    pub const MAX_ENCODED_LEN: Option<usize> = None;
     pub fn to_cbor(&self) -> Cbor {
         Cbor::Map(vec![
             (1, Cbor::Text(self.writer_id.clone())),
             (2, Cbor::Int(self.reason.wire())),
-            (
-                3,
-                match &self.detail {
-                    Some(v) => Cbor::Bytes(v.clone()),
-                    None => Cbor::Null,
-                },
-            ),
+            (3, match &self.detail { Some(v) => Cbor::Bytes(v.clone()), None => Cbor::Null }),
         ])
     }
     pub fn from_cbor(c: &Cbor) -> Result<Self, DecodeError> {
         Ok(Self {
             writer_id: c.try_get(1)?.try_text()?,
             reason: SwmrResetReason::from_wire(c.try_get(2)?.try_int()?)?,
-            detail: {
-                let v = c.try_get(3)?;
-                if v.is_null() {
-                    None
-                } else {
-                    Some(v.try_bytes()?)
-                }
-            },
+            detail: { let v = c.try_get(3)?; if v.is_null() { None } else { Some(v.try_bytes()?) } },
         })
+    }
+    pub fn decode(bytes: &[u8]) -> Result<Self, DecodeError> {
+        Self::from_cbor(&crate::cbor::try_decode_with(bytes, Self::MAX_DEPTH, Self::MAX_ENCODED_LEN)?)
     }
 }
 
 #[derive(Clone, Debug, PartialEq, Default)]
-pub struct SwmrSeal {}
+pub struct SwmrSeal {
+}
 impl SwmrSeal {
+    pub const MAX_DEPTH: usize = 32;
+    pub const MAX_ENCODED_LEN: Option<usize> = None;
     pub fn to_cbor(&self) -> Cbor {
-        Cbor::Map(vec![])
+        Cbor::Map(vec![
+        ])
     }
     pub fn from_cbor(c: &Cbor) -> Result<Self, DecodeError> {
-        Ok(Self {})
+        if !c.is_map() { return Err(DecodeError::WrongType { expected: "map" }); }
+        Ok(Self {
+        })
+    }
+    pub fn decode(bytes: &[u8]) -> Result<Self, DecodeError> {
+        Self::from_cbor(&crate::cbor::try_decode_with(bytes, Self::MAX_DEPTH, Self::MAX_ENCODED_LEN)?)
     }
 }
 
@@ -438,26 +395,20 @@ pub struct SwmrClose {
     pub error: Option<SwmrError>,
 }
 impl SwmrClose {
+    pub const MAX_DEPTH: usize = 32;
+    pub const MAX_ENCODED_LEN: Option<usize> = None;
     pub fn to_cbor(&self) -> Cbor {
-        Cbor::Map(vec![(
-            1,
-            match &self.error {
-                Some(v) => v.to_cbor(),
-                None => Cbor::Null,
-            },
-        )])
+        Cbor::Map(vec![
+            (1, match &self.error { Some(v) => v.to_cbor(), None => Cbor::Null }),
+        ])
     }
     pub fn from_cbor(c: &Cbor) -> Result<Self, DecodeError> {
         Ok(Self {
-            error: {
-                let v = c.try_get(1)?;
-                if v.is_null() {
-                    None
-                } else {
-                    Some(SwmrError::from_cbor(v)?)
-                }
-            },
+            error: { let v = c.try_get(1)?; if v.is_null() { None } else { Some(SwmrError::from_cbor(v)?) } },
         })
+    }
+    pub fn decode(bytes: &[u8]) -> Result<Self, DecodeError> {
+        Self::from_cbor(&crate::cbor::try_decode_with(bytes, Self::MAX_DEPTH, Self::MAX_ENCODED_LEN)?)
     }
 }
 
@@ -469,47 +420,26 @@ pub struct SwmrReadRequest {
     pub timeout_ms: Option<i64>,
 }
 impl SwmrReadRequest {
+    pub const MAX_DEPTH: usize = 32;
+    pub const MAX_ENCODED_LEN: Option<usize> = None;
     pub fn to_cbor(&self) -> Cbor {
         Cbor::Map(vec![
             (1, Cbor::Text(self.swmr_id.clone())),
             (2, Cbor::Text(self.stream_id.clone())),
-            (
-                3,
-                match &self.cursor {
-                    Some(v) => v.to_cbor(),
-                    None => Cbor::Null,
-                },
-            ),
-            (
-                4,
-                match &self.timeout_ms {
-                    Some(v) => Cbor::Int(*v),
-                    None => Cbor::Null,
-                },
-            ),
+            (3, match &self.cursor { Some(v) => v.to_cbor(), None => Cbor::Null }),
+            (4, match &self.timeout_ms { Some(v) => Cbor::Int(*v), None => Cbor::Null }),
         ])
     }
     pub fn from_cbor(c: &Cbor) -> Result<Self, DecodeError> {
         Ok(Self {
             swmr_id: c.try_get(1)?.try_text()?,
             stream_id: c.try_get(2)?.try_text()?,
-            cursor: {
-                let v = c.try_get(3)?;
-                if v.is_null() {
-                    None
-                } else {
-                    Some(SwmrCursor::from_cbor(v)?)
-                }
-            },
-            timeout_ms: {
-                let v = c.try_get(4)?;
-                if v.is_null() {
-                    None
-                } else {
-                    Some(v.try_int()?)
-                }
-            },
+            cursor: { let v = c.try_get(3)?; if v.is_null() { None } else { Some(SwmrCursor::from_cbor(v)?) } },
+            timeout_ms: { let v = c.try_get(4)?; if v.is_null() { None } else { Some(v.try_int()?) } },
         })
+    }
+    pub fn decode(bytes: &[u8]) -> Result<Self, DecodeError> {
+        Self::from_cbor(&crate::cbor::try_decode_with(bytes, Self::MAX_DEPTH, Self::MAX_ENCODED_LEN)?)
     }
 }
 
@@ -519,6 +449,8 @@ pub struct SwmrEndStream {
     pub stream_id: String,
 }
 impl SwmrEndStream {
+    pub const MAX_DEPTH: usize = 32;
+    pub const MAX_ENCODED_LEN: Option<usize> = None;
     pub fn to_cbor(&self) -> Cbor {
         Cbor::Map(vec![
             (1, Cbor::Text(self.swmr_id.clone())),
@@ -531,6 +463,9 @@ impl SwmrEndStream {
             stream_id: c.try_get(2)?.try_text()?,
         })
     }
+    pub fn decode(bytes: &[u8]) -> Result<Self, DecodeError> {
+        Self::from_cbor(&crate::cbor::try_decode_with(bytes, Self::MAX_DEPTH, Self::MAX_ENCODED_LEN)?)
+    }
 }
 
 #[derive(Clone, Debug, PartialEq, Default)]
@@ -538,13 +473,20 @@ pub struct SwmrTimerExpired {
     pub token: i64,
 }
 impl SwmrTimerExpired {
+    pub const MAX_DEPTH: usize = 32;
+    pub const MAX_ENCODED_LEN: Option<usize> = None;
     pub fn to_cbor(&self) -> Cbor {
-        Cbor::Map(vec![(1, Cbor::Int(self.token))])
+        Cbor::Map(vec![
+            (1, Cbor::Int(self.token)),
+        ])
     }
     pub fn from_cbor(c: &Cbor) -> Result<Self, DecodeError> {
         Ok(Self {
             token: c.try_get(1)?.try_int()?,
         })
+    }
+    pub fn decode(bytes: &[u8]) -> Result<Self, DecodeError> {
+        Self::from_cbor(&crate::cbor::try_decode_with(bytes, Self::MAX_DEPTH, Self::MAX_ENCODED_LEN)?)
     }
 }
 
@@ -561,104 +503,36 @@ pub struct SwmrReadResponse {
     pub reset_detail: Option<Vec<u8>>,
 }
 impl SwmrReadResponse {
+    pub const MAX_DEPTH: usize = 32;
+    pub const MAX_ENCODED_LEN: Option<usize> = None;
     pub fn to_cbor(&self) -> Cbor {
         Cbor::Map(vec![
             (1, Cbor::Text(self.swmr_id.clone())),
             (2, Cbor::Text(self.stream_id.clone())),
-            (
-                3,
-                match &self.snapshot {
-                    Some(v) => v.to_cbor(),
-                    None => Cbor::Null,
-                },
-            ),
-            (
-                4,
-                Cbor::Array(self.deltas.iter().map(|x| x.to_cbor()).collect()),
-            ),
-            (
-                5,
-                match &self.next_cursor {
-                    Some(v) => v.to_cbor(),
-                    None => Cbor::Null,
-                },
-            ),
+            (3, match &self.snapshot { Some(v) => v.to_cbor(), None => Cbor::Null }),
+            (4, Cbor::Array(self.deltas.iter().map(|x| x.to_cbor()).collect())),
+            (5, match &self.next_cursor { Some(v) => v.to_cbor(), None => Cbor::Null }),
             (6, Cbor::Int(self.state.wire())),
-            (
-                7,
-                match &self.reset_reason {
-                    Some(v) => Cbor::Int(v.wire()),
-                    None => Cbor::Null,
-                },
-            ),
-            (
-                8,
-                match &self.error {
-                    Some(v) => v.to_cbor(),
-                    None => Cbor::Null,
-                },
-            ),
-            (
-                9,
-                match &self.reset_detail {
-                    Some(v) => Cbor::Bytes(v.clone()),
-                    None => Cbor::Null,
-                },
-            ),
+            (7, match &self.reset_reason { Some(v) => Cbor::Int(v.wire()), None => Cbor::Null }),
+            (8, match &self.error { Some(v) => v.to_cbor(), None => Cbor::Null }),
+            (9, match &self.reset_detail { Some(v) => Cbor::Bytes(v.clone()), None => Cbor::Null }),
         ])
     }
     pub fn from_cbor(c: &Cbor) -> Result<Self, DecodeError> {
         Ok(Self {
             swmr_id: c.try_get(1)?.try_text()?,
             stream_id: c.try_get(2)?.try_text()?,
-            snapshot: {
-                let v = c.try_get(3)?;
-                if v.is_null() {
-                    None
-                } else {
-                    Some(SwmrSnapshot::from_cbor(v)?)
-                }
-            },
-            deltas: c
-                .try_get(4)?
-                .try_array()?
-                .iter()
-                .map(|x| SwmrDelta::from_cbor(x))
-                .collect::<Result<Vec<_>, DecodeError>>()?,
-            next_cursor: {
-                let v = c.try_get(5)?;
-                if v.is_null() {
-                    None
-                } else {
-                    Some(SwmrCursor::from_cbor(v)?)
-                }
-            },
+            snapshot: { let v = c.try_get(3)?; if v.is_null() { None } else { Some(SwmrSnapshot::from_cbor(v)?) } },
+            deltas: c.try_get(4)?.try_array()?.iter().map(|x| SwmrDelta::from_cbor(x)).collect::<Result<Vec<_>, DecodeError>>()?,
+            next_cursor: { let v = c.try_get(5)?; if v.is_null() { None } else { Some(SwmrCursor::from_cbor(v)?) } },
             state: SwmrState::from_wire(c.try_get(6)?.try_int()?)?,
-            reset_reason: {
-                let v = c.try_get(7)?;
-                if v.is_null() {
-                    None
-                } else {
-                    Some(SwmrResetReason::from_wire(v.try_int()?)?)
-                }
-            },
-            error: {
-                let v = c.try_get(8)?;
-                if v.is_null() {
-                    None
-                } else {
-                    Some(SwmrError::from_cbor(v)?)
-                }
-            },
-            reset_detail: {
-                let v = c.try_get(9)?;
-                if v.is_null() {
-                    None
-                } else {
-                    Some(v.try_bytes()?)
-                }
-            },
+            reset_reason: { let v = c.try_get(7)?; if v.is_null() { None } else { Some(SwmrResetReason::from_wire(v.try_int()?)?) } },
+            error: { let v = c.try_get(8)?; if v.is_null() { None } else { Some(SwmrError::from_cbor(v)?) } },
+            reset_detail: { let v = c.try_get(9)?; if v.is_null() { None } else { Some(v.try_bytes()?) } },
         })
+    }
+    pub fn decode(bytes: &[u8]) -> Result<Self, DecodeError> {
+        Self::from_cbor(&crate::cbor::try_decode_with(bytes, Self::MAX_DEPTH, Self::MAX_ENCODED_LEN)?)
     }
 }
 
@@ -668,14 +542,22 @@ pub struct SwmrSetTimer {
     pub ms: i64,
 }
 impl SwmrSetTimer {
+    pub const MAX_DEPTH: usize = 32;
+    pub const MAX_ENCODED_LEN: Option<usize> = None;
     pub fn to_cbor(&self) -> Cbor {
-        Cbor::Map(vec![(1, Cbor::Int(self.token)), (2, Cbor::Int(self.ms))])
+        Cbor::Map(vec![
+            (1, Cbor::Int(self.token)),
+            (2, Cbor::Int(self.ms)),
+        ])
     }
     pub fn from_cbor(c: &Cbor) -> Result<Self, DecodeError> {
         Ok(Self {
             token: c.try_get(1)?.try_int()?,
             ms: c.try_get(2)?.try_int()?,
         })
+    }
+    pub fn decode(bytes: &[u8]) -> Result<Self, DecodeError> {
+        Self::from_cbor(&crate::cbor::try_decode_with(bytes, Self::MAX_DEPTH, Self::MAX_ENCODED_LEN)?)
     }
 }
 
@@ -684,13 +566,20 @@ pub struct SwmrCancelTimer {
     pub token: i64,
 }
 impl SwmrCancelTimer {
+    pub const MAX_DEPTH: usize = 32;
+    pub const MAX_ENCODED_LEN: Option<usize> = None;
     pub fn to_cbor(&self) -> Cbor {
-        Cbor::Map(vec![(1, Cbor::Int(self.token))])
+        Cbor::Map(vec![
+            (1, Cbor::Int(self.token)),
+        ])
     }
     pub fn from_cbor(c: &Cbor) -> Result<Self, DecodeError> {
         Ok(Self {
             token: c.try_get(1)?.try_int()?,
         })
+    }
+    pub fn decode(bytes: &[u8]) -> Result<Self, DecodeError> {
+        Self::from_cbor(&crate::cbor::try_decode_with(bytes, Self::MAX_DEPTH, Self::MAX_ENCODED_LEN)?)
     }
 }
 
@@ -699,13 +588,20 @@ pub struct SwmrProducerStop {
     pub reason: SwmrStopReason,
 }
 impl SwmrProducerStop {
+    pub const MAX_DEPTH: usize = 32;
+    pub const MAX_ENCODED_LEN: Option<usize> = None;
     pub fn to_cbor(&self) -> Cbor {
-        Cbor::Map(vec![(1, Cbor::Int(self.reason.wire()))])
+        Cbor::Map(vec![
+            (1, Cbor::Int(self.reason.wire())),
+        ])
     }
     pub fn from_cbor(c: &Cbor) -> Result<Self, DecodeError> {
         Ok(Self {
             reason: SwmrStopReason::from_wire(c.try_get(1)?.try_int()?)?,
         })
+    }
+    pub fn decode(bytes: &[u8]) -> Result<Self, DecodeError> {
+        Self::from_cbor(&crate::cbor::try_decode_with(bytes, Self::MAX_DEPTH, Self::MAX_ENCODED_LEN)?)
     }
 }
 
@@ -715,6 +611,8 @@ pub struct SwmrDiagnostic {
     pub code: SwmrDiagCode,
 }
 impl SwmrDiagnostic {
+    pub const MAX_DEPTH: usize = 32;
+    pub const MAX_ENCODED_LEN: Option<usize> = None;
     pub fn to_cbor(&self) -> Cbor {
         Cbor::Map(vec![
             (1, Cbor::Int(self.severity.wire())),
@@ -726,5 +624,8 @@ impl SwmrDiagnostic {
             severity: SwmrSeverity::from_wire(c.try_get(1)?.try_int()?)?,
             code: SwmrDiagCode::from_wire(c.try_get(2)?.try_int()?)?,
         })
+    }
+    pub fn decode(bytes: &[u8]) -> Result<Self, DecodeError> {
+        Self::from_cbor(&crate::cbor::try_decode_with(bytes, Self::MAX_DEPTH, Self::MAX_ENCODED_LEN)?)
     }
 }
