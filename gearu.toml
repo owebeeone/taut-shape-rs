@@ -1,6 +1,7 @@
 # taut-shape-rs's releases (RELEASE.md). gearu verifies the tree, raises the versions, commits and
 # tags it, and pushes both, and the GitHub Release it creates starts
-# .github/workflows/publish.yml, which publishes the taut-shape crate to crates.io.
+# .github/workflows/release.yml, which publishes the taut-shape crate to crates.io by trusted
+# publishing.
 [project]
 name = "taut-shape-rs"
 branch = "main"
