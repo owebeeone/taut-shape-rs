@@ -1,0 +1,38 @@
+{
+  "codec_contract": 1,
+  "descriptor_contract": 1,
+  "generator_build": "rust-oneof-reference.1",
+  "runtime_owner": "taut.rust.foundation",
+  "sources": {
+    "generated.rs": {
+      "generated_sha256": "eda3e929bcff40ed300991d4910e77ac4ddc49de17faee3b2422bd70b67397a0",
+      "schema": "shape_log.taut.py",
+      "schema_sha256": "3e1224747430e12188beab3ece4d8ebe44decbcae3fe4b86c2731136617863a9"
+    },
+    "generated_atom.rs": {
+      "generated_sha256": "3d9a753676f8fe7cad8baaaf9fcaa2e0bb294d75b6053acf59f4b4d294368ea6",
+      "schema": "shape_atom.taut.py",
+      "schema_sha256": "2fff65c82bad67de654037cd10a2792f80586c70996edb8ca91f3abe7e986dcb"
+    },
+    "generated_crdt.rs": {
+      "generated_sha256": "8a595f31278885b9cd2d30a00a5f89d290b368855e694a7677b87f07f6718407",
+      "schema": "shape_crdt.taut.py",
+      "schema_sha256": "089a22f8c886208d9304afe394b146343420d6a3214461ee1e9288ee3b6c3ad6"
+    },
+    "generated_stream.rs": {
+      "generated_sha256": "7245a00d72c57bbb94b36ad3f4658095d84fc39e183fc2799cdaba65dc9220f1",
+      "schema": "shape_stream.taut.py",
+      "schema_sha256": "278d6fd4d64374ab6c2874ab82a0b61724d7987486e6467611fededddf325528"
+    },
+    "generated_swmr.rs": {
+      "generated_sha256": "e0d6da362ad7836485e6654790d2e79c221ad8c198e71b2a5703f5df2acc2d91",
+      "schema": "shape_swmr.taut.py",
+      "schema_sha256": "e0609b19921545e3d027606152a725da1e5c2921c0e809bd2758b55a9f65d5cc"
+    },
+    "generated_value.rs": {
+      "generated_sha256": "3baf1b6f5a6aac5d622467c919ad62d6e16a2e7c8192db791fa498330a541693",
+      "schema": "shape_value.taut.py",
+      "schema_sha256": "ad7dd65908271473ba23dc1f9907ad9913e57962c7644d07c729a4216aa29b5d"
+    }
+  }
+}

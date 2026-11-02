@@ -29,6 +29,8 @@ unsafe_code = "forbid"
 default = ["std"]
 std = []
 async = ["std", "dep:futures-core"]
+validation = ["taut-foundation/validation"]
 
 [dependencies]
+taut-foundation = { version = "0.10.0", default-features = false }
 futures-core = { version = "0.3", optional = true, default-features = false }

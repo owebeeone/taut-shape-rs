@@ -9,10 +9,15 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "7e3450815272ef58cec6d564423f6e755e25379b217b0bc688e295ba24df6b1d"
 
 [[package]]
+name = "taut-foundation"
+version = "0.10.0"
+
+[[package]]
 name = "taut-shape"
 version = "0.10.0"
 dependencies = [
  "futures-core",
+ "taut-foundation",
 ]
 
 [[package]]

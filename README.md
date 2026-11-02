@@ -26,13 +26,25 @@ implemented engine registry contains `atom`, `log`, `stream`, and `value`; anoth
 2 with `TAUT_SHAPE_UNSUPPORTED_SHAPE` before the process reads or writes a data
 frame.
 
-The message types in `crates/taut-shape/src/generated.rs` and
-`generated_atom.rs`, `generated_stream.rs`, `generated_value.rs`, and the CBOR runtime
-in `crates/taut-shape/src/cbor.rs` are **vendored/generated** — do not
-hand-edit; see each file's header for the source + regen command. So is
+The six `crates/taut-shape/src/generated*.rs` files contain generated native
+messages, codecs and mandatory descriptors. Regenerate them with
+`PYTHONPATH=../taut/src python scripts/regenerate_foundation_bindings.py`;
+`foundation_provenance.json` records the inputs and generated hashes.
+`crates/taut-shape/src/cbor.rs` re-exports the actual lightweight
+`taut-foundation` owner maintained in base Taut; it contains no private codec
+copy. Feature `validation` re-exports that same owner's reports/engine.
+The core remains `no_std + alloc`. Also generated is
 `crates/taut-shape/src/parity_vectors.rs`, taut's codec-parity rows, written by
 `scripts/gen_parity_vectors.py` from the taut tag `cbor.rs` names;
 `crates/taut-shape/tests/parity.rs` replays them against `cbor.rs`.
+
+The workspace binds the unreleased local foundation using `[patch.crates-io]`.
+An application using this crate from another workspace must supply that same
+local patch (or a compatible generated source owner) so its schemas and this
+library use one actual crate identity. No foundation registry release or install
+is assumed. The full source/package bindings and runnable composition checks
+are in `../taut/dev-docs/examples/rust-oneof/README.md`. Basic codec/descriptor
+consumers can depend on `taut-foundation` alone without the shape engines.
 
 ## Plans (the contract — read these first)
 

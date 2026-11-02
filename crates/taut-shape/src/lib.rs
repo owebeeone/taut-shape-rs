@@ -25,55 +25,32 @@ extern crate std;
 /// the recorded plan deviation). Public so the tool crate's framing layer can
 /// use the same `Cbor` type the generated codec speaks.
 pub mod cbor;
+pub use taut_foundation::descriptors;
+#[cfg(feature = "validation")]
+pub use taut_foundation::validation;
 
 /// tautc-generated `shape_log` message types + CBOR codec (D17). Vendored,
 /// header-marked "do not edit", regenerated on schema bump.
 ///
-/// Lints are suppressed here (at the declaration, not in the file body) so the
-/// vendored output stays byte-identical to `tautc` while still passing a
-/// `clippy -D warnings` CI gate: `unused_variables` for empty generated
-/// messages whose `from_cbor(c)` ignores its `Cbor` argument (e.g. `LogSeal`),
-/// `clippy::redundant_closure` for the generator's `|x| T::from_cbor(x)`
-/// mapping style, and `clippy::needless_question_mark` for the fail-closed
-/// codec's `|x| Ok(T::from_cbor(x)?)` list/map element mapping (the generic
-/// `Ok(..?)` wrapper is uniform across scalar and message elements).
-#[allow(
-    unused_variables,
-    clippy::redundant_closure,
-    clippy::needless_question_mark
-)]
+/// Empty-message decoder variables are allowed at the declaration. The normal
+/// generator owns its own uniform codec lint allowances and metadata adapters.
+#[allow(unused_variables)]
 pub mod generated;
 
 /// tautc-generated `shape_value` messages and fail-closed CBOR codecs.
-#[allow(
-    unused_variables,
-    clippy::redundant_closure,
-    clippy::needless_question_mark
-)]
+#[allow(unused_variables)]
 pub mod generated_value;
 
 /// tautc-generated `shape_atom` messages and fail-closed CBOR codecs.
-#[allow(
-    unused_variables,
-    clippy::redundant_closure,
-    clippy::needless_question_mark
-)]
+#[allow(unused_variables)]
 pub mod generated_atom;
 
 /// tautc-generated `shape_stream` messages and fail-closed CBOR codecs.
-#[allow(
-    unused_variables,
-    clippy::redundant_closure,
-    clippy::needless_question_mark
-)]
+#[allow(unused_variables)]
 pub mod generated_stream;
 
 /// tautc-generated `shape_swmr` messages and fail-closed CBOR codecs.
-#[allow(
-    unused_variables,
-    clippy::redundant_closure,
-    clippy::needless_question_mark
-)]
+#[allow(unused_variables)]
 pub mod generated_swmr;
 
 /// tautc-generated `shape_crdt` messages and fail-closed CBOR codecs.
