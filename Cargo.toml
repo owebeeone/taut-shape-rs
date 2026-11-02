@@ -16,8 +16,3 @@ rust-version = "1.75"
 # The core crate must stay no_std-clean; unsafe is not needed anywhere yet.
 unsafe_code = "forbid"
 
-# The foundation is an unreleased local crate maintained in base taut. External
-# applications supply this same patch, or bind every consumer to their generated
-# source owner. No crates.io publication or generation-time install is required.
-[patch.crates-io]
-taut-foundation = { path = "../taut/rust/taut-foundation" }

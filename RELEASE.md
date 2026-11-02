@@ -123,6 +123,13 @@ package publication and documentation deployment where configured.
 
 ## This repository
 
+The 0.11 train requires `taut-foundation` from crates.io before the shape crate
+can pass its registry-only package check. `foundation.yml` provides the initial
+publication route from an exact reviewed Taut commit and its immutable tag,
+using the existing `crates-io` environment credential. It publishes only the
+canonical foundation package, not the shape crate. Run the preflight with
+`publish=false` before starting the train. See Taut's `RELEASE.md` for ordering.
+
 A release publishes the `taut-shape` crate on crates.io. `gearu.toml` runs `cargo test`, `clippy` with warnings as errors, a `no_std` build and `cargo package`, as CI runs them before it publishes. gearu raises the workspace's, the crate's and the tool's versions together and refreshes `Cargo.lock` for the workspace's own packages only.
 
 The package reads the contract's corpus from a `taut-shape` checkout beside this repository, as CI

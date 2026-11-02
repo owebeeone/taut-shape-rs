@@ -38,11 +38,11 @@ The core remains `no_std + alloc`. Also generated is
 `scripts/gen_parity_vectors.py` from the taut tag `cbor.rs` names;
 `crates/taut-shape/tests/parity.rs` replays them against `cbor.rs`.
 
-The workspace binds the unreleased local foundation using `[patch.crates-io]`.
-An application using this crate from another workspace must supply that same
-local patch (or a compatible generated source owner) so its schemas and this
-library use one actual crate identity. No foundation registry release or install
-is assumed. The full source/package bindings and runnable composition checks
+The workspace resolves `taut-foundation` 0.11 from crates.io. Applications use
+the same registry dependency so their schemas and this library share one
+actual crate identity. No local patch or sibling runtime is needed. Generator
+runtime selection still performs no dependency installation. The full
+source/package bindings and runnable composition checks
 are in `../taut/dev-docs/examples/rust-oneof/README.md`. Basic codec/descriptor
 consumers can depend on `taut-foundation` alone without the shape engines.
 

@@ -1,0 +1,71 @@
+name: Publish canonical taut-foundation
+
+on:
+  workflow_dispatch:
+    inputs:
+      source_sha:
+        description: Exact reviewed commit in owebeeone/taut
+        required: true
+      version:
+        description: Exact foundation crate version
+        required: true
+      publish:
+        description: Publish after checks (requires the matching immutable Taut tag)
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+
+concurrency:
+  group: taut-foundation-publication
+  cancel-in-progress: false
+
+jobs:
+  foundation:
+    runs-on: ubuntu-latest
+    environment: crates-io
+    env:
+      SOURCE_SHA: ${{ inputs.source_sha }}
+      FOUNDATION_VERSION: ${{ inputs.version }}
+      PUBLISH: ${{ inputs.publish }}
+    steps:
+      - name: Require explicit immutable input
+        run: |
+          [[ "$SOURCE_SHA" =~ ^[0-9a-f]{40}$ ]]
+          [[ "$FOUNDATION_VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]
+      - uses: actions/checkout@v6
+        with:
+          repository: owebeeone/taut
+          ref: ${{ inputs.source_sha }}
+          fetch-depth: 0
+      - name: Verify source, canonical payload and release identity
+        run: |
+          test "$(git rev-parse HEAD)" = "$SOURCE_SHA"
+          python rust/sync_foundation.py --check
+          python - <<'PY'
+          import os, pathlib, tomllib
+          p = tomllib.loads(pathlib.Path('rust/taut-foundation/Cargo.toml').read_text())
+          assert p['package']['name'] == 'taut-foundation'
+          assert p['package']['version'] == os.environ['FOUNDATION_VERSION']
+          assert p['package'].get('publish') is not False
+          assert not p.get('dependencies'), 'foundation must remain dependency-free'
+          PY
+          if [ "$PUBLISH" = true ]; then
+            test "$(git rev-parse "refs/tags/v$FOUNDATION_VERSION^{commit}")" = "$SOURCE_SHA"
+          fi
+      - name: Test both feature modes and isolated registry payload
+        run: |
+          cargo test --manifest-path rust/taut-foundation/Cargo.toml --no-default-features
+          cargo test --manifest-path rust/taut-foundation/Cargo.toml --all-features
+          cargo package --manifest-path rust/taut-foundation/Cargo.toml
+          cargo publish --manifest-path rust/taut-foundation/Cargo.toml --dry-run
+      - name: Require bootstrap credential presence
+        env:
+          CARGO_REGISTRY_TOKEN: ${{ secrets.CARGO_REGISTRY_TOKEN }}
+        run: test -n "$CARGO_REGISTRY_TOKEN"
+      - name: Publish initial foundation through the existing registry environment
+        if: inputs.publish
+        env:
+          CARGO_REGISTRY_TOKEN: ${{ secrets.CARGO_REGISTRY_TOKEN }}
+        run: cargo publish --manifest-path rust/taut-foundation/Cargo.toml
