@@ -129,6 +129,12 @@ publication route from an exact reviewed Taut commit and its immutable tag,
 using the existing `crates-io` environment credential. It publishes only the
 canonical foundation package, not the shape crate. Run the preflight with
 `publish=false` before starting the train. See Taut's `RELEASE.md` for ordering.
+If an upload succeeds but its response or workflow completion is lost, rerun
+the exact same immutable inputs. The workflow distinguishes HTTP404 from
+network/registry failures, verifies the public checksum and every package
+payload entry against the clean reviewed archive and VCS SHA, and reconciles a
+matching existing version without uploading again. A mismatch blocks release.
+Run `python scripts/test_publish_foundation.py` to exercise those transitions.
 
 A release publishes the `taut-shape` crate on crates.io. `gearu.toml` runs `cargo test`, `clippy` with warnings as errors, a `no_std` build and `cargo package`, as CI runs them before it publishes. gearu raises the workspace's, the crate's and the tool's versions together and refreshes `Cargo.lock` for the workspace's own packages only.
 

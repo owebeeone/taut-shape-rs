@@ -29,6 +29,7 @@ jobs:
       SOURCE_SHA: ${{ inputs.source_sha }}
       FOUNDATION_VERSION: ${{ inputs.version }}
       PUBLISH: ${{ inputs.publish }}
+      RUSTUP_TOOLCHAIN: "1.96.0"
     steps:
       - name: Require explicit immutable input
         run: |
@@ -36,10 +37,17 @@ jobs:
           [[ "$FOUNDATION_VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]
       - uses: actions/checkout@v6
         with:
+          path: publisher
+      - uses: actions/checkout@v6
+        with:
           repository: owebeeone/taut
           ref: ${{ inputs.source_sha }}
           fetch-depth: 0
+          path: source
+      - name: Select the qualified Rust release toolchain
+        run: rustup toolchain install 1.96.0 --profile minimal
       - name: Verify source, canonical payload and release identity
+        working-directory: source
         run: |
           test "$(git rev-parse HEAD)" = "$SOURCE_SHA"
           python rust/sync_foundation.py --check
@@ -55,17 +63,27 @@ jobs:
             test "$(git rev-parse "refs/tags/v$FOUNDATION_VERSION^{commit}")" = "$SOURCE_SHA"
           fi
       - name: Test both feature modes and isolated registry payload
+        working-directory: source
         run: |
           cargo test --manifest-path rust/taut-foundation/Cargo.toml --no-default-features
           cargo test --manifest-path rust/taut-foundation/Cargo.toml --all-features
           cargo package --manifest-path rust/taut-foundation/Cargo.toml
-          cargo publish --manifest-path rust/taut-foundation/Cargo.toml --dry-run
+          if [ "$PUBLISH" != true ]; then
+            cargo publish --manifest-path rust/taut-foundation/Cargo.toml --dry-run
+          fi
       - name: Require bootstrap credential presence
+        if: ${{ !inputs.publish }}
         env:
           CARGO_REGISTRY_TOKEN: ${{ secrets.CARGO_REGISTRY_TOKEN }}
         run: test -n "$CARGO_REGISTRY_TOKEN"
       - name: Publish initial foundation through the existing registry environment
         if: inputs.publish
+        working-directory: source
         env:
           CARGO_REGISTRY_TOKEN: ${{ secrets.CARGO_REGISTRY_TOKEN }}
-        run: cargo publish --manifest-path rust/taut-foundation/Cargo.toml
+        run: python ../publisher/scripts/publish_foundation.py --version "$FOUNDATION_VERSION" --source-sha "$SOURCE_SHA"
+      - uses: actions/upload-artifact@v7
+        if: inputs.publish && success()
+        with:
+          name: foundation-publication
+          path: source/foundation-publication.json
