@@ -16,7 +16,7 @@ checksum = "63ac99ac22bb0e5e9d645bf1f49cc4ff974d82c05219f72b83c9f03cb93375ef"
 
 [[package]]
 name = "taut-shape"
-version = "0.10.0"
+version = "0.11.0"
 dependencies = [
  "futures-core",
  "taut-foundation",
@@ -24,7 +24,7 @@ dependencies = [
 
 [[package]]
 name = "taut-shape-tool"
-version = "0.10.0"
+version = "0.11.0"
 dependencies = [
  "taut-shape",
 ]
