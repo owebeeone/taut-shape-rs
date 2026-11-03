@@ -10,7 +10,9 @@ checksum = "7e3450815272ef58cec6d564423f6e755e25379b217b0bc688e295ba24df6b1d"
 
 [[package]]
 name = "taut-foundation"
-version = "0.10.0"
+version = "0.11.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "63ac99ac22bb0e5e9d645bf1f49cc4ff974d82c05219f72b83c9f03cb93375ef"
 
 [[package]]
 name = "taut-shape"
