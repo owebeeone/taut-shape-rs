@@ -52,12 +52,14 @@ jobs:
           test "$(git rev-parse HEAD)" = "$SOURCE_SHA"
           python rust/sync_foundation.py --check
           python - <<'PY'
-          import os, pathlib, tomllib
+          import os, pathlib, sys, tomllib
+          sys.path.insert(0, str(pathlib.Path("../publisher/scripts").resolve()))
+          from publish_foundation import validate_foundation_manifest
           p = tomllib.loads(pathlib.Path('rust/taut-foundation/Cargo.toml').read_text())
           assert p['package']['name'] == 'taut-foundation'
           assert p['package']['version'] == os.environ['FOUNDATION_VERSION']
           assert p['package'].get('publish') is not False
-          assert not p.get('dependencies'), 'foundation must remain dependency-free'
+          validate_foundation_manifest(p)
           PY
           if [ "$PUBLISH" = true ]; then
             test "$(git rev-parse "refs/tags/v$FOUNDATION_VERSION^{commit}")" = "$SOURCE_SHA"

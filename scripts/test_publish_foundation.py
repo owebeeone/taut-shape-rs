@@ -5,7 +5,7 @@ import json
 import tarfile
 import unittest
 from urllib.error import HTTPError, URLError
-from publish_foundation import publish_or_verify
+from publish_foundation import publish_or_verify, validate_foundation_manifest
 
 SHA='a'*40
 VERSION='0.11.0'
@@ -20,6 +20,23 @@ def crate(body=b'canonical'):
             item.size=len(data)
             tar.addfile(item,BytesIO(data))
     return stream.getvalue()
+
+
+class FoundationDependencyPolicy(unittest.TestCase):
+    def test_default_and_opt_in_binding_are_accepted(self):
+        validate_foundation_manifest({'features': {'default': []}})
+        validate_foundation_manifest({'features': {'default': [], 'num-bigint': ['dep:num-bigint']},
+            'dependencies': {'num-bigint': {'version': '0.4', 'optional': True, 'default-features': False}}})
+
+    def test_implicit_or_unrelated_dependencies_are_rejected(self):
+        for value in (
+            {'features': {'default': ['num-bigint']}},
+            {'dependencies': {'other': {'optional': True}}},
+            {'dependencies': {'num-bigint': {'optional': False}}},
+            {'dependencies': {'num-bigint': {'optional': True, 'default-features': False}}},
+        ):
+            with self.assertRaises(RuntimeError):
+                validate_foundation_manifest(value)
 
 
 class Registry:

@@ -121,6 +121,15 @@ package publication and documentation deployment where configured.
   same GitHub Release.
 <!-- gearu:release:end -->
 
+## Bigint 0.12 candidate
+
+The workspace and both member crates target `0.12.0`, depending on the
+bigint-capable `taut-foundation` in the `0.12` line. Publish that foundation
+through the approved workflow before refreshing this repository's registry
+lock and running locked registry-only release checks. Local validation can use
+an isolated Cargo patch, but a local patched lock is not a registry release
+receipt. No package has been published by this metadata update.
+
 ## This repository
 
 The 0.11 train requires `taut-foundation` from crates.io before the shape crate

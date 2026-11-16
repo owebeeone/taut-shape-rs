@@ -82,7 +82,8 @@ fn describe(e: &DecodeError) -> String {
         | DecodeError::TrailingBytes
         | DecodeError::InvalidUtf8
         | DecodeError::NonIntegerMapKey
-        | DecodeError::IntOverflow => String::new(),
+        | DecodeError::IntOverflow
+        | DecodeError::NonCanonicalBigInt => String::new(),
         DecodeError::UnsupportedInfo(info) => format!(";info={info}"),
         DecodeError::UnsupportedMajor(major) => format!(";major={major}"),
         DecodeError::DuplicateMapKey(key) => format!(";key={key}"),
@@ -260,4 +261,34 @@ fn int_rows_fit_the_i64_carrier_and_round_trip_through_the_runtime() {
         }
     }
     assert!(failures.is_empty(), "{}", failures.join("\n"));
+}
+
+#[test]
+fn bigint_round_trips_through_the_shape_foundation() {
+    use taut_shape::cbor::BigIntValue;
+    for (negative, bytes) in [
+        (false, vec![]),
+        (true, vec![1]),
+        (false, vec![1; 1025]),
+        (true, vec![1; 1025]),
+    ] {
+        let value = BigIntValue::from_magnitude(negative, bytes.clone()).unwrap();
+        let encoded = cbor::encode(&Cbor::BigInt(value));
+        let decoded = cbor::try_decode(&encoded).unwrap().try_bigint().unwrap();
+        assert_eq!(decoded.is_negative(), negative);
+        assert_eq!(decoded.magnitude(), bytes);
+        assert_eq!(cbor::encode(&Cbor::BigInt(decoded)), encoded);
+    }
+    assert_eq!(
+        describe(&DecodeError::NonCanonicalBigInt),
+        "NonCanonicalBigInt"
+    );
+    assert!(matches!(
+        cbor::try_decode(&[0xc2, 0x41, 0]),
+        Err(DecodeError::NonCanonicalBigInt)
+    ));
+    assert!(matches!(
+        cbor::try_decode(&[0xc2, 0x40]).unwrap().try_int(),
+        Err(DecodeError::WrongType { expected: "int" })
+    ));
 }

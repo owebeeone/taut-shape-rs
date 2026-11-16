@@ -12,6 +12,20 @@ from urllib.error import HTTPError
 from urllib.request import Request, urlopen
 
 
+def validate_foundation_manifest(manifest):
+    """Keep default users dependency-free; allow only the opt-in bigint binding."""
+    dependencies = manifest.get('dependencies', {})
+    features = manifest.get('features', {})
+    if features.get('default', []) or set(dependencies) - {'num-bigint'}:
+        raise RuntimeError('foundation default features must remain dependency-free')
+    if dependencies:
+        binding = dependencies['num-bigint']
+        if (not isinstance(binding, dict) or binding.get('optional') is not True
+                or binding.get('default-features') is not False
+                or features.get('num-bigint') != ['dep:num-bigint']):
+            raise RuntimeError('bigint binding must remain explicitly optional')
+
+
 def fetch(url):
     with urlopen(Request(url, headers={'User-Agent':'taut-foundation-release/1.0'}), timeout=60) as response:
         data = response.read(16*1024*1024+1)

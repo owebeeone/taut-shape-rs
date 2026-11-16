@@ -8,7 +8,7 @@
 [package]
 name = "taut-shape"
 description = "Reference Rust implementation of the Taut `log` delivery-shape mailbox engine."
-version = "0.11.0"
+version = "0.12.0"
 edition = "2021"
 license = "MIT OR Apache-2.0"
 repository = "https://github.com/owebeeone/taut-shape-rs"
@@ -32,5 +32,5 @@ async = ["std", "dep:futures-core"]
 validation = ["taut-foundation/validation"]
 
 [dependencies]
-taut-foundation = { version = "0.11.0", default-features = false }
+taut-foundation = { version = "0.12.0", default-features = false }
 futures-core = { version = "0.3", optional = true, default-features = false }
