@@ -25,6 +25,9 @@ jobs:
   foundation:
     runs-on: ubuntu-latest
     environment: crates-io
+    permissions:
+      contents: read
+      id-token: write
     env:
       SOURCE_SHA: ${{ inputs.source_sha }}
       FOUNDATION_VERSION: ${{ inputs.version }}
@@ -73,16 +76,14 @@ jobs:
           if [ "$PUBLISH" != true ]; then
             cargo publish --manifest-path rust/taut-foundation/Cargo.toml --dry-run
           fi
-      - name: Require bootstrap credential presence
-        if: ${{ !inputs.publish }}
-        env:
-          CARGO_REGISTRY_TOKEN: ${{ secrets.CARGO_REGISTRY_TOKEN }}
-        run: test -n "$CARGO_REGISTRY_TOKEN"
-      - name: Publish initial foundation through the existing registry environment
+      - name: Exchange GitHub OIDC identity for a short-lived registry token
+        id: auth
+        uses: rust-lang/crates-io-auth-action@v1
+      - name: Publish canonical foundation through trusted publishing
         if: inputs.publish
         working-directory: source
         env:
-          CARGO_REGISTRY_TOKEN: ${{ secrets.CARGO_REGISTRY_TOKEN }}
+          CARGO_REGISTRY_TOKEN: ${{ steps.auth.outputs.token }}
         run: python ../publisher/scripts/publish_foundation.py --version "$FOUNDATION_VERSION" --source-sha "$SOURCE_SHA"
       - uses: actions/upload-artifact@v7
         if: inputs.publish && success()

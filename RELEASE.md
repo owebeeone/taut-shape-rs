@@ -124,7 +124,8 @@ package publication and documentation deployment where configured.
 ## Bigint 0.12 candidate
 
 The workspace and both member crates target `0.12.0`, depending on the
-bigint-capable `taut-foundation` in the `0.12` line. Publish that foundation
+bigint-capable `taut-foundation` in the `0.12` line. The foundation workflow
+uses GitHub OIDC trusted publishing, without a stored registry token. Publish it
 through the approved workflow before refreshing this repository's registry
 lock and running locked registry-only release checks. Local validation can use
 an isolated Cargo patch, but a local patched lock is not a registry release
